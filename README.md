@@ -132,22 +132,58 @@ xautouch/
 
 ### 3.1 GitHub Actions 自动编译（推荐，无需本机 macOS）
 
-工程已配现成 CI：`.github/workflows/build.yml`，使用 `waruhachi/theos-action@v2.6.5`，在 macOS runner 上一次编译 **rootful / rootless / roothide** 三种越狱环境。
+工程已配现成 CI：`.github/workflows/build.yml`，使用 `waruhachi/theos-action@v2.6.6`（Theos 与 SDK 取 `waruhachi/theos` / `waruhachi/sdks` 的 `main` 分支——官方 `theos/theos` master 不含 `roothide` scheme，会报 “roothide package scheme does not exist”），在 macOS runner 上一次编译 **rootful / rootless / roothide** 三种越狱环境。
 
 流程：
 
 1. 把工程推到 GitHub 仓库（分支 `main` 或 `master`）。
 2. `push` / `PR` / 手动 `workflow_dispatch` 均触发。
-3. `audit` job 先在 ubuntu 跑 295 项自检 + 161 项全量对拍，全绿才进入编译。
+3. `audit` job 先在 ubuntu 跑 309 项自检 + 161 项全量对拍，全绿才进入编译。
 4. `build` job 用 theos-action 安装 Theos + iOS SDK，`make clean && make package FINALPACKAGE=1`，三种 scheme 分别产出 deb。
 5. 每个 deb 跑 `dpkg-deb -I` / `-c` 校验 control 与归档结构，然后作为 artifact 上传，直接下载即可安装。
+
+产物命名（Theos 默认输出到 `./packages/`）：
+
+| scheme | 产物 | 载荷前缀 |
+|---|---|---|
+| rootful | `app.xautouch.ios_1.0.0_iphoneos-arm64.deb` | `/` |
+| rootless | `app.xautouch.ios_1.0.0_iphoneos-arm64.deb` | `/var/jb/` |
+| roothide | `app.xautouch.ios_1.0.0_iphoneos-arm64e.deb` | roothide 布局 |
+
+包内实测包含（解包核对过）：
+
+- `Library/MobileSubstrate/DynamicLibraries/XAutouch.dylib` + `XAutouch.plist`（注入 SpringBoard）
+- `Applications/XXTExplorer.app/`（可执行文件 + Info.plist）
+- `usr/lib/xautouch/{web,lua,bin,bundles,models,tessdata}` 全部资源
+- `Library/LaunchDaemons/app.xautouch.agent.plist`
+- `control.tar.gz` 内 `preinst/postinst/prerm/postrm`（权限 0755）
 
 下载后在越狱设备安装（rootless 示例）：
 
 ```bash
-scp xautouch-rootless.deb root@iphone:/var/tmp/
-ssh root@iphone "dpkg -i /var/tmp/xautouch-rootless.deb && killall -9 SpringBoard"
+scp app.xautouch.ios_1.0.0_iphoneos-arm64.deb root@iphone:/var/tmp/
+ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && killall -9 SpringBoard"
 ```
+
+### 3.1.1 CI 实测暴露并已修复的编译问题
+
+这些是**本机 Windows 无法发现、只有真实 clang 才暴露**的问题，均已修复并通过 CI：
+
+| # | 现象 | 根因 | 修复 |
+|---|---|---|---|
+| 1 | `preinst/postinst 存在且可执行` 在 CI 失败 | 经 API 推送时文件 mode 全为 `100644`，丢了执行位（Windows 上 `os.access(X_OK)` 恒真） | 以 `100755` 重新提交维护脚本 |
+| 2 | `cannot initialize 'const char *' with 'const void *'` | Objective-C++ 下 `NSData.bytes` 是 `const void *` | 显式转型 |
+| 3 | `use of undeclared identifier 'TCP_NODELAY'` | 缺 `<netinet/tcp.h>` | 补头文件 |
+| 4 | `'system' is unavailable: not available on iOS` | iOS SDK 禁用 `system(3)` | 改用 `posix_spawn`；Lua 侧用 `-Dl_system=xt_system` 注入垫片 |
+| 5 | `import of C++ module ... within extern "C"` | Theos 自带 IOKit 头与 Xcode 15+ clang 模块冲突 | 删除未使用的 IOKit 头（符号本就走 dlsym） |
+| 6 | `-Werror` 让零散 warning 直接中断 | Theos 默认加 `-Werror` | `GO_EASY_ON_ME = 1`（保留 `-Wall`） |
+| 7 | `invalid argument '-std=c++17' not allowed with 'C'` | `-std=c++17` 被套到随工程编译的 Lua 纯 C 源码 | C++ 参数移入 `_CCFLAGS` |
+| 8 | `use of undeclared identifier 'typeof'` | ObjC++ 不认裸 `typeof` | 统一 `__typeof__` |
+| 9 | `framework 'BackBoardServices' not found` | 公开 SDK 无私有框架二进制 | 移除私有框架链接，符号由 `-Wl,-undefined,dynamic_lookup` 运行时解析 |
+| 10 | `You are missing a filter property list` | Theos 只从**工程根目录**找 `XAutouch.plist` | 补根目录 filter plist |
+| 11 | `ls: .theos/packages/: No such file` | Theos 默认输出 `./packages/` | CI 校验步骤同时兼容两个目录 |
+
+`tests/verify.py` 已把第 1/4/7/8/10 类问题固化为静态断言（头文件存在性、裸 `typeof`、`system` 调用、`bytes` 隐式转型、filter plist），避免回归。
 
 ### 3.2 本机 macOS 手动编译
 
