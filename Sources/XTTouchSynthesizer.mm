@@ -11,7 +11,10 @@
 #import <dlfcn.h>
 #import <mach/mach_time.h>
 #import <UIKit/UIKit.h>
-#import <IOKit/hid/IOHIDEvent.h>
+// 不 import <IOKit/hid/IOHIDEvent.h>：Theos 自带 IOKit 头在 Xcode 15+ 下
+// 会因 "@import 出现在 extern \"C\" 内" 触发 -Werror 编译失败。
+// 本文件的 IOHID 符号全部经 dlsym 动态解析，常量用下方自定义宏，
+// 因此该头文件并非必需，移除后功能不变且跨 Xcode 版本可编译。
 
 #ifndef kIOHIDDigitizerEventTouch
 #define kIOHIDDigitizerEventTouch    0x00000002
