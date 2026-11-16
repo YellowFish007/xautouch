@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: 运行 295 项静态自检
+      - name: 运行 309 项静态自检
         run: python tests/verify.py
       - name: 运行 161 项全量对拍
         run: python tests/audit.py

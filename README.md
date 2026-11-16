@@ -2,7 +2,13 @@
 
 对标商业产品 XXTouch（`app.xxtouch.ios` 1.3.8）的毕业设计实现。目标是**功能清单逐条对齐**：同构 deb 包 + MobileSubstrate 注入 SpringBoard + IOHID 系统级触摸合成 + Lua 5.4 脚本引擎 + Web 管理面板 + 独立文件管理器 App + 多引擎 OCR/模板触发 + 远程媒体传输 + 完整签名链。
 
+![build](https://github.com/YellowFish007/xautouch/actions/workflows/build.yml/badge.svg)
+![release](https://img.shields.io/github/v/release/YellowFish007/xautouch?label=deb)
+![size](https://img.shields.io/github/release-date/YellowFish007/xautouch?label=last%20build)
+
 > 包名/域名用 `xautouch` / `example.edu` 占位，避免与商业版冲突。核心机制、API 结构、资源布局与参照对象同构。
+
+> 已实测产物见 [§3.1.1](#311-已验证产物release-直链可直接安装)，三种 scheme 的 deb 可直接下载安装。
 
 ---
 
@@ -125,7 +131,7 @@ xautouch/
 │   ├── Library/LaunchDaemons/   # app.xautouch.agent.plist
 │   └── usr/lib/xautouch/        # web(110) / lua(119) / bin(27)
 ├── Sources/*README.md           # 各模块设计说明（引擎/UI/网络/签名/媒体/App）
-└── tests/verify.py              # 295 项自检
+└── tests/verify.py              # 309 项自检
 ```
 
 ## 三、编译与安装
@@ -165,7 +171,23 @@ scp app.xautouch.ios_1.0.0_iphoneos-arm64.deb root@iphone:/var/tmp/
 ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && killall -9 SpringBoard"
 ```
 
-### 3.1.1 CI 实测暴露并已修复的编译问题
+### 3.1.1 已验证产物（Release 直链，可直接安装）
+
+三种 scheme 均已在本仓库 CI 中编译成功并解包核对，产物挂在 [Releases v1.0.0](https://github.com/YellowFish007/xautouch/releases/tag/v1.0.0)，`curl -LO` 即可下载（无需登录）：
+
+| scheme | 直链 | 大小 | SHA-256 前 16 位 |
+|---|---|---|---|
+| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | `c1b65e9f0f35bcdb` |
+| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | `fc7ec08eed0d6b0f` |
+| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | `6ed61db3c876b73e` |
+
+实测核对结论（`dpkg-deb` 解包 + tar 逐条清点）：
+
+- 每个包 **280 个文件**；rootful / roothide 顶层为 `Applications Library usr`，rootless 全部落在 `var/jb/` 前缀下。
+- 内置资源 `usr/lib/xautouch/` 与原版 `var/mobile/Media/1ferver/` **文件名 256/256 全量对齐**（bin 27、lua 119、web 110），另加本工程新增 `bundles` 12、`models` 5、`tessdata` 1、`bin/xautouchd` 1，合计 280。
+- `control` 段 `Installed-Size: 14152`，`Architecture` 分别为 `iphoneos-arm64` / `iphoneos-arm64e`；`preinst/postinst/prerm/postrm` 权限均为 `0755`。
+
+### 3.1.2 CI 实测暴露并已修复的编译问题
 
 这些是**本机 Windows 无法发现、只有真实 clang 才暴露**的问题，均已修复并通过 CI：
 
@@ -222,7 +244,7 @@ if r.matched then xtouch.input("hello") end
 ## 五、自检与全量对拍
 
 ```bash
-python tests/verify.py    # 295 PASS, 0 FAIL —— 工程内部静态自检
+python tests/verify.py    # 309 PASS, 0 FAIL —— 工程内部静态自检
 python tests/audit.py     # 161 项对拍，已对齐 148 / 同构等价 13 / 缺失 0，覆盖率 100%
 ```
 
@@ -232,7 +254,7 @@ python tests/audit.py     # 161 项对拍，已对齐 148 / 同构等价 13 / �
 
 | 组 | 内容 | 结果 |
 |---|---|---|
-| A 资源 | web 110/110、lua 119/119、bin 26/26、bundles 12/12、models 5/5、tessdata 1/1 逐文件比对 | 全部已对齐 |
+| A 资源 | web 110/110、lua 119/119、bin 27/27（另加自研 `xautouchd`，实 28）、bundles 12/12、models 5/5、tessdata 1/1 逐文件比对 | 全部已对齐 |
 | B 二进制 | 12 个商业 Mach-O/动态库 → 本工程源码等价实现逐项映射 | 13 项同构等价 |
 | C 路由 | 原版 39 条设备端 HTTP 路由 | 全部已对齐 |
 | D 端点 | 原版 Web 面板 40+ 端点 | 全部已对齐 |
