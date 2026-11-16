@@ -3,7 +3,10 @@ name: Build XAutouch (Theos)
 on:
   push:
     branches: [main, master]
+    # 纯文档改动不触发 macOS 编译，省 runner 排队时间
+    paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', '.gitignore', 'LICENSE']
   workflow_dispatch:
 
 jobs:

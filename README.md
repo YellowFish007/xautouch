@@ -177,9 +177,11 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 
 | scheme | 直链 | 大小 | SHA-256 前 16 位 |
 |---|---|---|---|
-| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | `c1b65e9f0f35bcdb` |
-| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | `fc7ec08eed0d6b0f` |
-| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | `6ed61db3c876b73e` |
+| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | `d84fd0f8ad56e850` |
+| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | `3f69d67fb09b8bf2` |
+| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | `ae4e5653cabd52c4` |
+
+> 上表哈希对应 Release 里这一份资产；工程未启用 `-frandom-seed` 等可复现构建选项，同一份源码重新编译出的字节会不同（Mach-O UUID 与 ar/tar 时间戳），所以**以 Release 资产为准**，不要拿后续 CI 产物的哈希来比对。
 
 实测核对结论（`dpkg-deb` 解包 + tar 逐条清点）：
 
