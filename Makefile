@@ -48,9 +48,12 @@ XAutouch_FILES = Sources/Tweak.xm \
                  Sources/XTPosixSystem.c \
                  $(LUA_SOURCES)
 
-XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore IOKit Vision \
+XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore Vision \
                       VideoToolbox CoreMedia CoreVideo AVFoundation AudioToolbox ImageIO
-XAutouch_PRIVATE_FRAMEWORKS = BackBoardServices SpringBoardServices GraphicsServices
+# 私有框架（BackBoardServices / SpringBoardServices / GraphicsServices）不在此链接：
+# 公开 SDK 中无对应 .framework 二进制，链接会报 "framework not found"。
+# 所需私有能力（IOHID 事件派发等）全部走 dlsym 运行时解析，
+# 由下方 -Wl,-undefined,dynamic_lookup 保证未定义符号可在设备端解析。
 XAutouch_CFLAGS = -fobjc-arc -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment -Dl_system=xt_system -include Sources/XTPosixSystem.h
 # -std=c++17 / -fno-modules 只对 C++/ObjC++ 生效；若放进 _CFLAGS 会让随工程编译的
 # Lua 5.4 纯 C 源码报 "invalid argument '-std=c++17' not allowed with 'C'"。
