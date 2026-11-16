@@ -6,6 +6,13 @@
 #   1) tweak  XAutouch.dylib  —— 注入 SpringBoard 的自动化引擎
 #   2) app    XXTExplorer.app —— 独立的等价文件管理器
 
+# Theos 默认追加 -Werror（common.mk 中 GO_EASY_ON_ME 未设置时），
+# 会让任意 warning（unused-variable 等）直接中断编译。
+# 本项目仍需真实的三方/私有 API 适配，故关闭 warnings-as-errors，
+# 但保留 -Wall，告警照常输出，便于逐项清理。
+# 注意：必须在 include common.mk 之前定义。
+GO_EASY_ON_ME = 1
+
 include $(THEOS)/makefiles/common.mk
 
 # 与 control 的 firmware >= 12.0 对齐，避免可用性告警触发 -Werror

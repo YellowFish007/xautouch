@@ -672,7 +672,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
         BOOL keyframe = NO;
         CFArrayRef atts = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, YES);
         if (atts && CFArrayGetCount(atts) > 0) {
-            CFDictionaryRef d = CFArrayGetValueAtIndex(atts, 0);
+            CFDictionaryRef d = (CFDictionaryRef)CFArrayGetValueAtIndex(atts, 0);
             keyframe = !CFDictionaryContainsKey(d, kCMSampleAttachmentKey_NotSync);
         }
 
@@ -738,7 +738,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
     if (fragCnt == 0) fragCnt = 1;
 
     uint32_t fid = _frameId.fetch_add(1, std::memory_order_relaxed);
-    const uint8_t *bytes = data.bytes;
+    const uint8_t *bytes = (const uint8_t *)data.bytes;
     uint32_t tsHi = htonl((uint32_t)(tsUS >> 32));
     uint32_t tsLo = htonl((uint32_t)(tsUS & 0xFFFFFFFFULL));
     uint32_t nlenBE = htonl((uint32_t)total);
@@ -826,7 +826,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
     if (buf.length < minBytes) buf.length = minBytes;
 
     XTAACContext ctx;
-    ctx.data = buf.bytes;
+    ctx.data = (const uint8_t *)buf.bytes;
     ctx.length = buf.length;
     ctx.offset = 0;
 
