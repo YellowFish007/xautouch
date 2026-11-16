@@ -52,6 +52,16 @@ for env in ("rootful", "rootless", "roothide", "trollstore"):
 check("watchdog 守护脚本存在", os.path.isfile(os.path.join(prefix, "bin", "xautouchd")))
 plist = read("layout/Library/LaunchDaemons/app.xautouch.agent.plist")
 check("LaunchDaemon 指向 xautouchd", "xautouchd" in plist)
+# layout/ 三种 scheme 共用，plist 里的绝对路径只在 rootful 成立；
+# rootless 必须在打包前改写成 /var/jb 前缀，否则守护进程起不来。
+check("提供按 scheme 改写 launchd 路径的钩子",
+      os.path.isfile(os.path.join(ROOT, "tools", "fix_stage_plist.py")))
+check("Makefile 在打包前调用该钩子",
+      "fix_stage_plist.py" in read("Makefile") and "after-stage::" in read("Makefile"))
+check("钩子按 rootless 加 /var/jb 前缀", '"/var/jb"' in read("tools/fix_stage_plist.py"))
+check("postinst 优先用 launchctl bootstrap", "launchctl bootstrap system" in post)
+check("postinst 签名覆盖 DynamicLibraries 目录",
+      "MobileSubstrate/DynamicLibraries/XAutouch.dylib" in post)
 check("资源路径与代码一致 (usr/lib/xautouch)",
       "usr/lib/xautouch" in read("Sources/XTApplication.mm") or "/usr/lib/xautouch" in read("Sources/XTApplication.mm"))
 

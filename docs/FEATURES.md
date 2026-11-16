@@ -163,7 +163,7 @@
 | 文件 | 字节 | 类型 |
 |---|---|---|
 | `layout/DEBIAN/control` | 478 | 元数据 |
-| `layout/DEBIAN/postinst` | 4069 | 维护脚本 |
+| `layout/DEBIAN/postinst` | 5454 | 维护脚本 |
 | `layout/DEBIAN/postrm` | 746 | 维护脚本 |
 | `layout/DEBIAN/preinst` | 1139 | 维护脚本 |
 | `layout/DEBIAN/prerm` | 348 | 维护脚本 |

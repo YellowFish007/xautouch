@@ -83,7 +83,14 @@ if [ -f "$SIGN_TOOL" ]; then
     echo "XAutouch: sign tools loaded ($(xt_sign_status 2>/dev/null | head -1))"
 fi
 
-for BIN in /usr/lib/TweakInject/XAutouch.dylib "$ROOT/usr/lib/TweakInject/XAutouch.dylib"; do
+# 注入目录按环境依次探测：rootless/roothide 是 Library/MobileSubstrate，
+# 老式 TweakInject 仅作兜底，漏掉会让签名步骤静默跳过。
+for BIN in \
+    "${ROOT}/Library/MobileSubstrate/DynamicLibraries/XAutouch.dylib" \
+    "/Library/MobileSubstrate/DynamicLibraries/XAutouch.dylib" \
+    "/var/jb/Library/MobileSubstrate/DynamicLibraries/XAutouch.dylib" \
+    "/usr/lib/TweakInject/XAutouch.dylib" \
+    "${ROOT}/usr/lib/TweakInject/XAutouch.dylib"; do
     [ -f "$BIN" ] || continue
     chmod 755 "$BIN"
     chown root:wheel "$BIN"
@@ -104,12 +111,32 @@ fi
 if [ -f "$PLAIST" ]; then
     chmod 644 "$PLAIST"
     chown root:wheel "$PLAIST"
-    launchctl unload "$PLAIST" >/dev/null 2>&1
-    launchctl load "$PLAIST" >/dev/null 2>&1
+    # iOS 15+ 的 launchctl 已弃用 load，改走 bootstrap；两者都试，失败不阻断安装。
+    if ! launchctl bootstrap system "$PLAIST" >/dev/null 2>&1; then
+        launchctl unload "$PLAIST" >/dev/null 2>&1
+        launchctl load -w "$PLAIST" >/dev/null 2>&1
+    fi
+    # 落地确认：守护进程没进 launchctl list 时给出可执行的排查提示
+    sleep 1
+    if launchctl list 2>/dev/null | grep -q 'app\.xautouch\.agent'; then
+        echo "XAutouch: daemon loaded (app.xautouch.agent)"
+    else
+        echo "XAutouch: warning - daemon 未出现在 launchctl list"
+        echo "          手动执行: launchctl bootstrap system $PLAIST"
+        echo "          respring 后 launchd 也会自动扫描该 plist"
+    fi
 fi
 
 # 7) 刷新图标缓存并重启桌面使 tweak 注入生效
-if command -v uicache >/dev/null 2>&1; then uicache -r >/dev/null 2>&1; fi
+#    uicache -r 只刷新已有缓存，不会注册新装到 /var/jb/Applications 的 App，
+#    所以先按路径注册，失败再退回全量刷新。
+if command -v uicache >/dev/null 2>&1; then
+    if [ -d "$ROOT/Applications/XXTExplorer.app" ]; then
+        uicache -p "$ROOT/Applications/XXTExplorer.app" >/dev/null 2>&1 || uicache -r >/dev/null 2>&1
+    else
+        uicache -r >/dev/null 2>&1
+    fi
+fi
 killall -9 SpringBoard >/dev/null 2>&1
 
 echo "XAutouch: installed ($MODE)"

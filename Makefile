@@ -86,3 +86,11 @@ after-install::
 	install.exec "killall -9 SpringBoard || true"
 
 include $(THEOS)/makefiles/aggregate.mk
+
+# ---------------------------------------------------------------- 打包前按 scheme 修正 launchd 路径
+# layout/ 是三种 scheme 共用的一份静态文件，而 launchd 的 ProgramArguments 必须是绝对路径。
+# rootless 把 payload 和 plist 一起前移到 /var/jb，若 plist 里仍写 /usr/lib/...，
+# launchd 在真实根上找不到 xautouchd，守护进程静默失败（装完 8080 面板打不开）。
+# 在 stage 之后、dpkg-deb 打包之前改写，改动只落在 .theos/_ 里，不污染 layout/。
+after-stage::
+	@python3 tools/fix_stage_plist.py "$(if $(THEOS_PACKAGE_SCHEME),$(THEOS_PACKAGE_SCHEME),rootful)" .theos/_
