@@ -51,7 +51,7 @@ XAutouch_FILES = Sources/Tweak.xm \
 XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore IOKit Vision \
                       VideoToolbox CoreMedia CoreVideo AVFoundation AudioToolbox ImageIO
 XAutouch_PRIVATE_FRAMEWORKS = BackBoardServices SpringBoardServices GraphicsServices
-XAutouch_CFLAGS = -fobjc-arc -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment -Dl_system=xt_system
+XAutouch_CFLAGS = -fobjc-arc -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment -Dl_system=xt_system -include Sources/XTPosixSystem.h
 # -std=c++17 / -fno-modules 只对 C++/ObjC++ 生效；若放进 _CFLAGS 会让随工程编译的
 # Lua 5.4 纯 C 源码报 "invalid argument '-std=c++17' not allowed with 'C'"。
 XAutouch_CCFLAGS = -std=c++17 -fno-modules
