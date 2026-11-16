@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- MobileSubstrate 注入过滤器：只注入 SpringBoard。
+	     XAutouch 需要 SpringBoard 进程内的 UIApplication / 窗口层级来派发触摸事件、
+	     截图与展示悬浮 UI，不注入其他进程以避免影响系统稳定性。 -->
+	<key>Filter</key>
+	<dict>
+		<key>Bundles</key>
+		<array>
+			<string>com.apple.springboard</string>
+		</array>
+	</dict>
+</dict>
+</plist>

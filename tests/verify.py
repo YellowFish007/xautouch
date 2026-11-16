@@ -344,10 +344,10 @@ check("Lua os.execute 走 iOS 垫片", "-Dl_system=xt_system" in read("Makefile"
 check("C++ 参数放在 _CCFLAGS", "_CCFLAGS" in read("Makefile")
       and "-std=c++17" not in [x for x in read("Makefile").split("\n")
                                if x.startswith("XAutouch_CFLAGS")][0])
-# Theos 打包 tweak 时必须存在注入过滤 plist，否则 stage 阶段直接失败
-_filter = os.path.join(ROOT, "layout", "Library", "MobileSubstrate",
-                       "DynamicLibraries", "XAutouch.plist")
-check("MobileSubstrate 过滤 plist 存在", os.path.isfile(_filter))
+# Theos 打包 tweak 时从「工程根目录」找注入过滤 plist（XAutouch.plist / Filter.plist），
+# 缺失会让 stage 阶段直接失败。
+_filter = os.path.join(ROOT, "XAutouch.plist")
+check("MobileSubstrate 过滤 plist 在工程根目录", os.path.isfile(_filter))
 check("过滤 plist 注入 SpringBoard",
       os.path.isfile(_filter) and "com.apple.springboard" in open(_filter, encoding="utf-8").read())
 check("垫片源码在 _FILES 参与编译", "XTPosixSystem.c" in read("Makefile"))
