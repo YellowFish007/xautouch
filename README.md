@@ -131,7 +131,9 @@ xautouch/
 │   ├── Library/LaunchDaemons/   # app.xautouch.agent.plist
 │   └── usr/lib/xautouch/        # web(110) / lua(119) / bin(27)
 ├── Sources/*README.md           # 各模块设计说明（引擎/UI/网络/签名/媒体/App）
-└── tests/verify.py              # 309 项自检
+├── tests/verify.py              # 309 项静态自检
+├── tests/audit.py               # 161 项与商业版逐项对拍（基线在 tests/baseline/）
+└── tools/check_deb.py           # 纯 Python deb 结构校验器（CI 与本地通用）
 ```
 
 ## 三、编译与安装
@@ -146,7 +148,7 @@ xautouch/
 2. `push` / `PR` / 手动 `workflow_dispatch` 均触发。
 3. `audit` job 先在 ubuntu 跑 309 项自检 + 161 项全量对拍，全绿才进入编译。
 4. `build` job 用 theos-action 安装 Theos + iOS SDK，`make clean && make package FINALPACKAGE=1`，三种 scheme 分别产出 deb。
-5. 每个 deb 跑 `dpkg-deb -I` / `-c` 校验 control 与归档结构，然后作为 artifact 上传，直接下载即可安装。
+5. 每个 deb 跑 `python3 tools/check_deb.py` 校验 control 字段、维护脚本权限、必备路径与 `var/jb` 前缀，然后作为 artifact 上传，直接下载即可安装。
 6. 三种 scheme **串行跑在同一个 macOS job** 里。早先用 matrix 拆成三个 job 时，`macos-latest` 抢不到 runner 的 job 在排队约 15 分钟后会被平台直接 cancel（实测连丢两次 `rootful`），串行只占一个 runner，命中率高得多。
 
 产物命名（Theos 默认输出到 `./packages/`）：
@@ -207,6 +209,8 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 | 9 | `framework 'BackBoardServices' not found` | 公开 SDK 无私有框架二进制 | 移除私有框架链接，符号由 `-Wl,-undefined,dynamic_lookup` 运行时解析 |
 | 10 | `You are missing a filter property list` | Theos 只从**工程根目录**找 `XAutouch.plist` | 补根目录 filter plist |
 | 11 | `ls: .theos/packages/: No such file` | Theos 默认输出 `./packages/` | CI 校验步骤同时兼容两个目录 |
+| 12 | `dpkg-deb: command not found` | `macos-26-arm64` 镜像不再预装 dpkg，靠它校验产物会假失败 | 自写纯 Python 校验器 `tools/check_deb.py`（解析 ar + control.tar + data.tar，校验字段/权限/必备路径/`var/jb` 前缀），CI 与本地通用 |
+| 13 | `macos-latest` 上 matrix 某个 job 排队约 15 分钟后被 cancel | 平台对长时间等不到 macOS runner 的 job 直接取消，实测连丢两次 `rootful` | 三种 scheme 合并进同一个 macOS job 串行编译，只占一个 runner |
 
 `tests/verify.py` 已把第 1/4/7/8/10 类问题固化为静态断言（头文件存在性、裸 `typeof`、`system` 调用、`bytes` 隐式转型、filter plist），避免回归。
 

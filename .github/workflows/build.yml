@@ -35,6 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 准备 Python（deb 结构校验用）
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: 安装 Theos 与 iOS SDK
         uses: waruhachi/theos-action@v2.6.6
         with:
@@ -87,24 +92,8 @@ jobs:
 
       - name: 校验 deb 产物结构
         run: |
-          set -e
-          for deb in dist/*.deb; do
-            echo "==== $deb ===="
-            dpkg-deb -I "$deb" | head -30
-            echo "-- payload 顶层 --"
-            dpkg-deb -c "$deb" | head -12
-            echo "-- 文件数 --"
-            dpkg-deb -c "$deb" | grep -c '^-' || true
-          done
-          # 关键文件必须都在
-          for deb in dist/*.deb; do
-            dpkg-deb -c "$deb" | grep -q 'MobileSubstrate/DynamicLibraries/XAutouch.dylib' \
-              || { echo "$deb 缺 tweak dylib"; exit 1; }
-            dpkg-deb -c "$deb" | grep -q 'Applications/XXTExplorer.app/XXTExplorer' \
-              || { echo "$deb 缺 XXTExplorer"; exit 1; }
-            dpkg-deb -c "$deb" | grep -q 'LaunchDaemons/app.xautouch.agent.plist' \
-              || { echo "$deb 缺 launchd plist"; exit 1; }
-          done
+          set -eo pipefail
+          python3 tools/check_deb.py dist/*.deb
 
       - name: 上传 deb 产物
         uses: actions/upload-artifact@v4
