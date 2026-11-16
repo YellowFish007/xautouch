@@ -2,9 +2,9 @@
  * XTRoutes.mm - XTHTTPServer 路由实现
  *
  * 完整覆盖参照对象的设备端 39 条路由和 Web 面板全部端点：
- *   设备端：/api/app/* /api/config /api/file* /api/key/* /api/pasteboard/*
- *           /api/path/* /api/proc* /api/screen/* /api/script/* /api/system/*
- *           /api/touch/*（含 drag-curve / drag-linear / wheel 及 async 变体）
+ *   设备端：/api/app/... /api/config /api/file... /api/key/... /api/pasteboard/...
+ *           /api/path/... /api/proc... /api/screen/... /api/script/... /api/system/...
+ *           /api/touch/...（含 drag-curve / drag-linear / wheel 及 async 变体）
  *   Web 端：认证、远程访问、服务控制、deb 安装、用户配置、文件管理、
  *           脚本编辑/加密、应用列表、录制配置、WebRTC 信令、SSE 日志。
  *   静态资源：从 resourceRoot/web 提供真实 Web 面板。

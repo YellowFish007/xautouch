@@ -26,11 +26,9 @@
 #import <time.h>
 #import <CommonCrypto/CommonDigest.h>
 
-// dispatchRequest: 在 XTRoutes.mm 的 category 中实现；此处前向声明避免
-// -Wincomplete-implementation（Theos 默认 -Werror）误报。
-@interface XTHTTPServer (XTRoutesForward)
-- (nullable XTHTTPResponse *)dispatchRequest:(XTHTTPRequest *)req;
-@end
+// 注：dispatchRequest: 的实现在 XTRoutes.mm 的 category 中。
+// 主实现文件不重复声明该 selector，由 CFLAGS 的 -Wno-incomplete-implementation
+// 抑制 clang 对跨文件 category 实现的误报。
 
 #pragma mark - XTHTTPRequest
 

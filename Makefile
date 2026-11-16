@@ -43,7 +43,7 @@ XAutouch_FILES = Sources/Tweak.xm \
 XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore IOKit Vision \
                       VideoToolbox CoreMedia CoreVideo AVFoundation AudioToolbox ImageIO
 XAutouch_PRIVATE_FRAMEWORKS = BackBoardServices SpringBoardServices GraphicsServices
-XAutouch_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation
+XAutouch_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment
 XAutouch_LDFLAGS = -Wl,-undefined,dynamic_lookup $(LUA_SOURCES)
 
 include $(THEOS_MAKE_PATH)/tweak.mk
