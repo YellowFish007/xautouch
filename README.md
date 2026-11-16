@@ -147,6 +147,7 @@ xautouch/
 3. `audit` job 先在 ubuntu 跑 309 项自检 + 161 项全量对拍，全绿才进入编译。
 4. `build` job 用 theos-action 安装 Theos + iOS SDK，`make clean && make package FINALPACKAGE=1`，三种 scheme 分别产出 deb。
 5. 每个 deb 跑 `dpkg-deb -I` / `-c` 校验 control 与归档结构，然后作为 artifact 上传，直接下载即可安装。
+6. 三种 scheme **串行跑在同一个 macOS job** 里。早先用 matrix 拆成三个 job 时，`macos-latest` 抢不到 runner 的 job 在排队约 15 分钟后会被平台直接 cancel（实测连丢两次 `rootful`），串行只占一个 runner，命中率高得多。
 
 产物命名（Theos 默认输出到 `./packages/`）：
 

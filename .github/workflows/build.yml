@@ -24,15 +24,14 @@ jobs:
       - name: 运行 161 项全量对拍
         run: python tests/audit.py
 
-  # 门禁 2：用现成 theos-action 在 macOS runner 编译三种越狱环境
+  # 门禁 2：用现成 theos-action 在 macOS runner 编译三种越狱环境。
+  # 三种 scheme 串行跑在同一个 macOS job 里，原因见 step 注释：
+  # macOS runner 排队超过约 15 分钟会被平台取消（matrix 三个 job 抢不到 runner 时
+  # 会随机丢掉一个，实测连丢两次 rootful），单 job 只占一个 runner，命中率高得多。
   build:
-    name: 编译打包 (${{ matrix.scheme }})
+    name: 编译打包 (rootful / rootless / roothide)
     needs: audit
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        scheme: [rootful, rootless, roothide]
     steps:
       - uses: actions/checkout@v4
 
@@ -53,48 +52,68 @@ jobs:
           libsandy: 'false'
           remotelog: 'false'
 
-      - name: 编译 tweak + App
-        env:
-          SCHEME: ${{ matrix.scheme }}
+      - name: 编译 tweak + App（三种 scheme 串行）
         run: |
-          set -e
+          set -eo pipefail
           export FINALPACKAGE=1
-          if [ "$SCHEME" = "rootful" ]; then
-            unset THEOS_PACKAGE_SCHEME || true
+          mkdir -p dist
+          # arch 固定写死：rootful/rootless 出 arm64，roothide 出 arm64e
+          for pair in rootful:arm64 rootless:arm64 roothide:arm64e; do
+            SCHEME="${pair%%:*}"
+            ARCHTAG="${pair##*:}"
+            echo "===== building $SCHEME ($ARCHTAG) ====="
+            if [ "$SCHEME" = "rootful" ]; then
+              unset THEOS_PACKAGE_SCHEME || true
+            else
+              export THEOS_PACKAGE_SCHEME="$SCHEME"
+            fi
             make clean
             make package
-          else
-            export THEOS_PACKAGE_SCHEME="$SCHEME"
-            make clean
-            make package
-          fi
+            # Theos 输出到 ./packages/（老版本是 .theos/packages/），两个都认
+            shopt -s nullglob
+            cands=(packages/*.deb .theos/packages/*.deb)
+            shopt -u nullglob
+            if [ ${#cands[@]} -eq 0 ]; then
+              echo "!! $SCHEME 未产出 deb"
+              exit 1
+            fi
+            deb=$(ls -t "${cands[@]}" | head -1)
+            dst="dist/xautouch-1.0.0-${SCHEME}-iphoneos-${ARCHTAG}.deb"
+            cp "$deb" "$dst"
+            echo "--> $dst  $(du -h "$dst" | cut -f1)"
+          done
+          echo "===== dist ====="
+          ls -lh dist
 
       - name: 校验 deb 产物结构
         run: |
           set -e
-          shopt -s nullglob
-          debs=(packages/*.deb .theos/packages/*.deb)
-          if [ ${#debs[@]} -eq 0 ]; then
-            echo "未找到 .deb 产物"; exit 1
-          fi
-          for deb in "${debs[@]}"; do
+          for deb in dist/*.deb; do
             echo "==== $deb ===="
-            ls -lh "$deb"
             dpkg-deb -I "$deb" | head -30
             echo "-- payload 顶层 --"
-            dpkg-deb -c "$deb" | head -20
+            dpkg-deb -c "$deb" | head -12
+            echo "-- 文件数 --"
+            dpkg-deb -c "$deb" | grep -c '^-' || true
+          done
+          # 关键文件必须都在
+          for deb in dist/*.deb; do
+            dpkg-deb -c "$deb" | grep -q 'MobileSubstrate/DynamicLibraries/XAutouch.dylib' \
+              || { echo "$deb 缺 tweak dylib"; exit 1; }
+            dpkg-deb -c "$deb" | grep -q 'Applications/XXTExplorer.app/XXTExplorer' \
+              || { echo "$deb 缺 XXTExplorer"; exit 1; }
+            dpkg-deb -c "$deb" | grep -q 'LaunchDaemons/app.xautouch.agent.plist' \
+              || { echo "$deb 缺 launchd plist"; exit 1; }
           done
 
       - name: 上传 deb 产物
         uses: actions/upload-artifact@v4
         with:
-          name: xautouch-${{ matrix.scheme }}
-          path: |
-            packages/*.deb
-            .theos/packages/*.deb
+          name: xautouch-debs
+          path: dist/*.deb
           if-no-files-found: error
 
-  # 汇总三个产物到一个 release 附件（手动触发时）
+  # 汇总产物（手动触发时把三个 deb 打成一个可下载件）
   release:
     name: 汇总构建产物
     needs: build
@@ -106,3 +125,7 @@ jobs:
           path: artifacts
       - name: 列出全部产物
         run: find artifacts -name '*.deb' -exec ls -lh {} \;
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xautouch-all-schemes
+          path: artifacts/**/*.deb
