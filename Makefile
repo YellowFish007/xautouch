@@ -50,7 +50,10 @@ XAutouch_FILES = Sources/Tweak.xm \
 XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore IOKit Vision \
                       VideoToolbox CoreMedia CoreVideo AVFoundation AudioToolbox ImageIO
 XAutouch_PRIVATE_FRAMEWORKS = BackBoardServices SpringBoardServices GraphicsServices
-XAutouch_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment
+XAutouch_CFLAGS = -fobjc-arc -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation -Wno-objc-protocol-method-implementation -Wno-comment
+# -std=c++17 / -fno-modules 只对 C++/ObjC++ 生效；若放进 _CFLAGS 会让随工程编译的
+# Lua 5.4 纯 C 源码报 "invalid argument '-std=c++17' not allowed with 'C'"。
+XAutouch_CCFLAGS = -std=c++17 -fno-modules
 # Lua 源码已在 _FILES 中参与编译，LDFLAGS 不能再列一次（会重复符号）
 XAutouch_LDFLAGS = -Wl,-undefined,dynamic_lookup
 
@@ -65,7 +68,9 @@ XXTExplorer_FILES = Sources/XXTExplorer/main.m \
                     Sources/XXTExplorer/XTEFileListController.mm \
                     Sources/XXTExplorer/XTEFileEditorController.mm
 XXTExplorer_FRAMEWORKS = Foundation UIKit CoreGraphics
-XXTExplorer_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Wno-unused-parameter
+XXTExplorer_CFLAGS = -fobjc-arc -Wno-unused-parameter
+# main.m 是纯 ObjC/C，不能带 -std=c++17；C++ 参数只给 .mm
+XXTExplorer_CCFLAGS = -std=c++17 -fno-modules
 # 声明为资源随应用打包（阶段 1 编译期不拷贝，阶段 2 打包时嵌入 .app）
 XXTExplorer_RESOURCE_FILES = Sources/XXTExplorer/Info.plist
 XXTExplorer_INSTALL_PATH = /Applications
