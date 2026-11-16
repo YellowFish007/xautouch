@@ -69,10 +69,14 @@ jobs:
       - name: 校验 deb 产物结构
         run: |
           set -e
-          echo "== .theos/packages =="
-          ls -la .theos/packages/
-          for deb in .theos/packages/*.deb; do
+          shopt -s nullglob
+          debs=(packages/*.deb .theos/packages/*.deb)
+          if [ ${#debs[@]} -eq 0 ]; then
+            echo "未找到 .deb 产物"; exit 1
+          fi
+          for deb in "${debs[@]}"; do
             echo "==== $deb ===="
+            ls -lh "$deb"
             dpkg-deb -I "$deb" | head -30
             echo "-- payload 顶层 --"
             dpkg-deb -c "$deb" | head -20
@@ -82,7 +86,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xautouch-${{ matrix.scheme }}
-          path: .theos/packages/*.deb
+          path: |
+            packages/*.deb
+            .theos/packages/*.deb
           if-no-files-found: error
 
   # 汇总三个产物到一个 release 附件（手动触发时）
