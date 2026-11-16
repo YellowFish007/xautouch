@@ -191,6 +191,9 @@ static void XTFreeGray(XTGrayImage img) { if (img.gray) free(img.gray); }
     UIImage *img = shot ? [UIImage imageWithContentsOfFile:shot] : nil;
     if (!img || !img.CGImage) return @{@"matched":@NO, @"texts":@[], @"error":@"capture failed"};
 
+    // VNRecognizeTextRequest / VNRecognizedText 需 iOS 13+；roothide 等 scheme 的
+    // deployment target 可能低至 9.0，必须做运行时版本判断（否则真机会崩溃）。
+    if (@available(iOS 13.0, *)) {
     CGImageRef cg = img.CGImage;
     VNRecognizeTextRequest *req = [[VNRecognizeTextRequest alloc] initWithCompletionHandler:nil];
     req.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
@@ -230,6 +233,11 @@ static void XTFreeGray(XTGrayImage img) { if (img.gray) free(img.gray); }
     XTLog(@"[XAutouch] OCR %lu 行，expect=%@ -> %@", (unsigned long)texts.count, expect ?: @"(any)", matched ? @"hit" : @"miss");
     return @{@"matched":@(matched), @"texts":texts, @"boxes":boxes,
              @"expect":expect ?: @"", @"count":@(texts.count)};
+    } else {
+        XTLog(@"[XAutouch] Vision OCR 需要 iOS 13+，当前系统不支持，返回未命中");
+        return @{@"matched":@NO, @"texts":@[], @"boxes":@[], @"expect":expect ?: @"",
+                 @"count":@0, @"error":@"Vision OCR requires iOS 13+"};
+    }
 }
 
 @end

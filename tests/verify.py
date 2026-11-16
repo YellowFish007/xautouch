@@ -283,5 +283,48 @@ for e in orig_web:
 check("file_list 兼容原版 data.list", "list" in rt and "change" in rt)
 check("control 去掉未用的 preferenceloader", "preferenceloader" not in ctrl)
 
+print("== 11. 本地头文件与跨平台编译隐患 ==")
+import re as _re
+_incdirs = ["Sources", "vendor/lua/src", "include"]
+_missing = []
+_crossfile = []
+for _dp, _dn, _fn in os.walk(SRC):
+    for _f in _fn:
+        if not _f.endswith((".m", ".mm", ".h", ".xm")):
+            continue
+        _p = os.path.join(_dp, _f)
+        for _i, _line in enumerate(open(_p, encoding="utf-8", errors="ignore"), 1):
+            _m = _re.match(r'\s*#(?:import|include)\s+"([^"]+)"', _line)
+            if not _m:
+                continue
+            _h = _m.group(1)
+            _cands = [os.path.join(_dp, _h)] + [os.path.join(d, _h) for d in _incdirs]
+            if not any(os.path.isfile(c) for c in _cands):
+                _missing.append(f"{os.path.relpath(_p, ROOT)}:{_i} -> {_h}")
+            # 形如 "XTVisionEngineRegistry.h" 但实际只有 .mm 的跨文件头误引用
+            if _h.endswith(".h") and not any(os.path.isfile(c) for c in _cands):
+                _crossfile.append(_h)
+check("所有本地 #import 目标文件存在", not _missing)
+for _m in _missing:
+    print(f"    [缺失] {_m}")
+
+# iOS 不可用 API 与版本敏感 API 必须做运行时判断
+_code_lines = []
+for _dp, _dn, _fn in os.walk(SRC):
+    for _f in _fn:
+        if not _f.endswith((".mm", ".m")):
+            continue
+        for _line in open(os.path.join(_dp, _f), encoding="utf-8", errors="ignore"):
+            _s = _line.strip()
+            if _s.startswith("//") or _s.startswith("*") or _s.startswith("/*"):
+                continue
+            _code_lines.append(_s)
+_code = "\n".join(_code_lines)
+check("未使用 iOS 上不可用的 system()", _re.search(r"[^a-zA-Z_]system\s*\(", _code) is None)
+check("进程调用改用 posix_spawn", "posix_spawn" in read("Sources/XTApplication.mm"))
+check("Vision OCR 有 @available 版本保护",
+      "@available(iOS 13.0" in read("Sources/XTVision.mm"))
+check("Makefile 限定 64 位架构", "ARCHS" in read("Makefile") and "arm64" in read("Makefile"))
+
 print(f"\n结果: {passed} PASS, {failed} FAIL")
 sys.exit(1 if failed else 0)

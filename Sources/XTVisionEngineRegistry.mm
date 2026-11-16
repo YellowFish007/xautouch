@@ -8,7 +8,7 @@
  *   - 所有对引擎的方法调用均包在 @try/@catch 中，异常按失败处理并继续降级；
  *   - 全部外部引擎不可用时返回 nil，由 XTVision.mm 使用内置 NCC/Vision 实现兜底。
  */
-#import "XTVisionEngineRegistry.h"
+#import "XTVisionEngine.h"
 #import "XTONNXEngine.h"
 #import "XTNCNNEngine.h"
 #import "XTTesseractEngine.h"
