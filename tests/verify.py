@@ -339,6 +339,12 @@ check("NSData bytes 赋值语句均显式转型",
       _re.search(r"^\s*\w+\.(data|buf)\s*=\s*[^;()]*\.bytes\s*;", _ocpp, _re.M) is None)
 check("签名器未重复定义系统类 NSPipe",
       "@interface NSPipe" not in read("Sources/XTCodeSigner.mm"))
+check("Lua os.execute 走 iOS 垫片", "-Dl_system=xt_system" in read("Makefile")
+      and os.path.isfile(os.path.join(SRC, "XTPosixSystem.c")))
+check("垫片实现在 _FILES 中参与编译", "XTPosixSystem.c" in read("Makefile"))
+check("C++ 参数放在 _CCFLAGS", "_CCFLAGS" in read("Makefile")
+      and "-std=c++17" not in [x for x in read("Makefile").split("\n")
+                               if x.startswith("XAutouch_CFLAGS")][0])
 
 print(f"\n结果: {passed} PASS, {failed} FAIL")
 sys.exit(1 if failed else 0)
