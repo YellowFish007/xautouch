@@ -10,6 +10,16 @@
 
 > 已实测产物见 [§3.1.1](#311-已验证产物release-直链可直接安装)，三种 scheme 的 deb 可直接下载安装。
 
+**先看哪份文件**（省得翻整个仓库）：
+
+| 想知道 | 看这里 | 说明 |
+|---|---|---|
+| 有哪些功能、落在哪个文件 | [`docs/FEATURES.md`](docs/FEATURES.md) | **源码自动生成**，122 条端点 + 46 个模块 + 资源清单，永远等于代码事实 |
+| 功能清单与答辩对照 | 本文件第一节 | 人工整理，含设计取舍说明 |
+| 怎么编译、怎么装 | 本文件第三节 | CI 与手动两条路 |
+| 与商业版差在哪 | [`docs/FEATURES.md` §7](docs/FEATURES.md) | 6 项已知差异，附影响 |
+| 怎么证明没吹 | 本文件第五节 + `tests/` | 309 项静态自检 + 161 项逐项对拍 |
+
 ---
 
 ## 一、功能对照矩阵（答辩用）
@@ -33,7 +43,7 @@
 | 系统    | `/api/system/log` `/api/system/reboot` `/api/system/respring`                                                                                                                                                                  |
 | 触摸    | `/api/touch/down` `/api/touch/move` `/api/touch/up` `/api/touch/tap` `/api/touch/drag-curve` `/api/touch/drag-curve-async` `/api/touch/drag-linear` `/api/touch/drag-linear-async` `/api/touch/wheel` `/api/touch/wheel-async` |
 
-### 2. Web 管理面板端点 — 35/35 全覆盖
+### 2. Web 管理面板端点 — 44/44 全覆盖
 
 `xxtouch_auth.js` / `xxtouch_service.js` / `upgrade.js` / `startup_conf.js` / `cc.js` / `screen.js` 等面板脚本引用的端点：
 
@@ -131,6 +141,7 @@ xautouch/
 │   ├── Library/LaunchDaemons/   # app.xautouch.agent.plist
 │   └── usr/lib/xautouch/        # web(110) / lua(119) / bin(27)
 ├── Sources/*README.md           # 各模块设计说明（引擎/UI/网络/签名/媒体/App）
+├── docs/FEATURES.md             # 功能细节总表（tools/gen_features.py 生成）
 ├── tests/verify.py              # 309 项静态自检
 ├── tests/audit.py               # 161 项与商业版逐项对拍（基线在 tests/baseline/）
 └── tools/check_deb.py           # 纯 Python deb 结构校验器（CI 与本地通用）

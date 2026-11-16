@@ -23,6 +23,8 @@ jobs:
         run: python tests/verify.py
       - name: 运行 161 项全量对拍
         run: python tests/audit.py
+      - name: 校验 docs/FEATURES.md 与源码同步
+        run: python tools/gen_features.py --check
 
   # 门禁 2：用现成 theos-action 在 macOS runner 编译三种越狱环境。
   # 三种 scheme 串行跑在同一个 macOS job 里，原因见 step 注释：
