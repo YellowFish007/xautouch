@@ -13,3 +13,6 @@ Thumbs.db
 
 # Editor
 *.swp
+
+# local CI helper (not part of deliverable)
+.ci_push.py
