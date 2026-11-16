@@ -222,6 +222,7 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 | 11 | `ls: .theos/packages/: No such file` | Theos 默认输出 `./packages/` | CI 校验步骤同时兼容两个目录 |
 | 12 | `dpkg-deb: command not found` | `macos-26-arm64` 镜像不再预装 dpkg，靠它校验产物会假失败 | 自写纯 Python 校验器 `tools/check_deb.py`（解析 ar + control.tar + data.tar，校验字段/权限/必备路径/`var/jb` 前缀），CI 与本地通用 |
 | 13 | `macos-latest` 上 matrix 某个 job 排队约 15 分钟后被 cancel | 平台对长时间等不到 macOS runner 的 job 直接取消，实测连丢两次 `rootful` | 三种 scheme 合并进同一个 macOS job 串行编译，只占一个 runner |
+| 14 | rootless 装完 8080 打不开、`launchctl list` 里没有 `app.xautouch.agent` | `layout/` 三种 scheme 共用一份 launchd plist，`ProgramArguments` 写死 `/usr/lib/xautouch/bin/xautouchd`；rootless 下 payload 与 plist 都在 `/var/jb`，launchd 在真实根上找不到这个可执行文件，静默失败 | 新增 `after-stage` 钩子 `tools/fix_stage_plist.py`，按 `THEOS_PACKAGE_SCHEME` 改写 `ProgramArguments`；`verify.py` 加 5 条断言锁住，回退即红 |
 
 `tests/verify.py` 已把第 1/4/7/8/10 类问题固化为静态断言（头文件存在性、裸 `typeof`、`system` 调用、`bytes` 隐式转型、filter plist），避免回归。
 
