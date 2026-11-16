@@ -178,15 +178,15 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 
 三种 scheme 均已在本仓库 CI 中编译成功并解包核对，产物挂在 [Releases v1.0.0](https://github.com/YellowFish007/xautouch/releases/tag/v1.0.0)，`curl -LO` 即可下载（无需登录）：
 
-| scheme | 直链 | 大小 | SHA-256 前 16 位 |
+| scheme | 直链 | 大小 | payload 文件数 |
 |---|---|---|---|
-| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | `d84fd0f8ad56e850` |
-| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | `3f69d67fb09b8bf2` |
-| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | `ae4e5653cabd52c4` |
+| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | 280 |
+| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | 280 |
+| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | 280 |
 
-> 上表哈希对应 Release 里这一份资产；工程未启用 `-frandom-seed` 等可复现构建选项，同一份源码重新编译出的字节会不同（Mach-O UUID 与 ar/tar 时间戳），所以**以 Release 资产为准**，不要拿后续 CI 产物的哈希来比对。
+> 工程未启用 `-frandom-seed` 等可复现构建选项，同一份源码重新编译出的字节每次都不同（Mach-O UUID + ar/tar 时间戳），所以这里不写死哈希——校验请下载后跑 `python3 tools/check_deb.py <deb>`，它比哈希更能说明问题。
 
-实测核对结论（`dpkg-deb` 解包 + tar 逐条清点）：
+实测核对结论（`tools/check_deb.py` 解析 ar + tar 逐条清点）：
 
 - 每个包 **280 个文件**；rootful / roothide 顶层为 `Applications Library usr`，rootless 全部落在 `var/jb/` 前缀下。
 - 内置资源 `usr/lib/xautouch/` 与原版 `var/mobile/Media/1ferver/` **文件名 256/256 全量对齐**（bin 27、lua 119、web 110），另加本工程新增 `bundles` 12、`models` 5、`tessdata` 1、`bin/xautouchd` 1，合计 280。
