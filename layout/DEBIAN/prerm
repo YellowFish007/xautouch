@@ -1,0 +1,8 @@
+#!/bin/sh
+# XAutouch prerm - 卸载前停止服务与脚本
+set +e
+for P in /var/jb/Library/LaunchDaemons/app.xautouch.agent.plist /Library/LaunchDaemons/app.xautouch.agent.plist /rootfs/Library/LaunchDaemons/app.xautouch.agent.plist; do
+    [ -f "$P" ] && launchctl unload "$P" >/dev/null 2>&1
+done
+killall -9 XAutouchAgent >/dev/null 2>&1
+exit 0

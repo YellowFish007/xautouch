@@ -1,0 +1,15 @@
+#!/bin/sh
+# XAutouch postrm - 清理资源（保留用户脚本备份）
+set +e
+for PREFIX in /var/jb/usr/lib/xautouch /usr/lib/xautouch /rootfs/usr/lib/xautouch; do
+    [ -d "$PREFIX" ] || continue
+    cp -a "$PREFIX/scripts" "${PREFIX}.removed-scripts.$(date +%s)" >/dev/null 2>&1
+    rm -rf "$PREFIX/captures" "$PREFIX/logs" "$PREFIX/templates" "$PREFIX/recycle" "$PREFIX/tmp"
+    rm -f "$PREFIX/user_conf.plist" "$PREFIX/record_conf.plist" "$PREFIX/volume_action_conf.plist"
+done
+for P in /var/jb/Library/LaunchDaemons/app.xautouch.agent.plist /Library/LaunchDaemons/app.xautouch.agent.plist /rootfs/Library/LaunchDaemons/app.xautouch.agent.plist; do
+    rm -f "$P"
+done
+killall -9 SpringBoard >/dev/null 2>&1
+echo "XAutouch: removed"
+exit 0

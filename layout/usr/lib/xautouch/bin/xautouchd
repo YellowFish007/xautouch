@@ -1,0 +1,31 @@
+#!/bin/sh
+# XAutouch watchdog - 由 LaunchDaemon 拉起
+# 真正的自动化引擎注入在 SpringBoard 进程内；本守护进程负责检测引擎存活，
+# 异常时重启桌面让 tweak 重新注入。
+set +e
+PREFIX=/usr/lib/xautouch
+[ -d /var/jb/usr/lib/xautouch ] && PREFIX=/var/jb/usr/lib/xautouch
+[ -d /rootfs/usr/lib/xautouch ] && PREFIX=/rootfs/usr/lib/xautouch
+
+LOG="$PREFIX/logs/engine.log"
+mkdir -p "$PREFIX/logs"
+
+echo "$(date) XAutouch watchdog started ($PREFIX)" >> "$LOG"
+
+while :; do
+    if ! killall -0 SpringBoard >/dev/null 2>&1; then
+        echo "$(date) SpringBoard missing, respring" >> "$LOG"
+        killall -9 SpringBoard >/dev/null 2>&1
+    fi
+    # 引擎日志超过 10 分钟无更新视为卡死
+    if [ -f "$LOG" ]; then
+        MTIME=$(stat -f %m "$LOG" 2>/dev/null || stat -c %Y "$LOG" 2>/dev/null)
+        NOW=$(date +%s)
+        if [ -n "$MTIME" ] && [ $((NOW - MTIME)) -gt 600 ]; then
+            echo "$(date) engine stale, respring" >> "$LOG"
+            killall -9 SpringBoard >/dev/null 2>&1
+            : > "$LOG"
+        fi
+    fi
+    sleep 30
+done

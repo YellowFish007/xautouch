@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta http-equiv="X-UA-Compatible" content="edge" />
+  <meta name="renderer" content="webkit" />
+  <title>X.X.T.</title>
+  <link rel="apple-touch-icon" href="/xxtouch.png" />
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <script type="text/javascript" src="mdui/js/mdui.min.js"></script>
+  <script type="text/javascript" src="js/i18n.js"></script>
+  <script type="text/javascript" src="js/xxtouch_web.js"></script>
+  <script type="text/javascript" src="encript.js"></script>
+  <link rel="stylesheet" href="mdui/css/mdui.min.css" />
+  <link rel="stylesheet" href="css/xxtouch_web.css" />
+  <link rel="icon" href="/xxtouch.png" type="image/png" />
+</head>
+
+<body class="mdui-drawer-body-left mdui-appbar-with-toolbar mdui-theme-primary-blue mdui-theme-accent-deep-orange">
+  <div class="mdui-drawer" id="main-drawer"></div>
+  <header class="mdui-appbar mdui-appbar-fixed">
+    <div class="mdui-toolbar mdui-xxtouch-color">
+      <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-drawer="{target: '#main-drawer'}"><i
+          class="mdui-icon material-icons"></i></span>
+      <a href="./index.html" class="mdui-typo-headline mdui-hidden-xs">X.X.T.</a>
+      <a href="" class="mdui-typo-title" data-i18n="本地加密">本地加密</a>
+      <div class="mdui-toolbar-spacer"></div>
+    </div>
+  </header>
+  <div class="mdui-container-fluid">
+    <br />
+    <div class="mdui-row">
+      <div class="mdui-col-lg-8 mdui-col-md-9 mdui-col-sm-10 mdui-col-offset-sm-1 mdui-col-md-5">
+        <br />
+        <div class="mdui-typo-headline" data-i18n="本地加密">
+          本地加密
+        </div>
+        <br />
+        <div class="mdui-divider"></div>
+        <br />
+        <div id="display-message" style="display:none">
+          <div class="mdui-progress">
+            <div class="mdui-progress-indeterminate"></div>
+          </div>
+          <br />
+          <div id="message">
+            脚本加密中，请不要乱动等待加密完成！
+          </div>
+        </div>
+        <div class="mdui-row" id="bform">
+          <li id="format_options" class="mdui-list-item">
+            <div class="mdui-list-item-content"><label for="format_version">脚本格式</label>
+              <div id="default_format_preview" class="mdui-list-item-text" style="display:none"></div>
+            </div>
+            <select id="format_version" class="mdui-textfield-input" aria-describedby="default_format_preview">
+              <option value="default" selected>跟随偏好设置</option>
+              <option value="3">v3（2023-10-19）</option>
+              <option value="4">v4（2026-10-30）</option>
+            </select>
+          </li>
+          <li id="legacy_debug_options" class="mdui-list-item mdui-ripple" style="display:none">
+            <div class="mdui-list-item-content">
+              <div class="mdui-list-item-title">
+                保留调试信息
+              </div>
+              <div class="mdui-list-item-text mdui-list-item-one-line xxtouch-tip">
+                允许在加密的脚本发生运行期错误之时抛出带有行及名字的错误信息
+              </div>
+              <div class="mdui-list-item-text mdui-list-item-two-line xxtouch-tip">
+                注意：激活该选项加密后的脚本有潜在的被反编译风险
+              </div>
+            </div><label class="mdui-switch"><input id="no_strip" type="checkbox" /> <i
+                class="mdui-switch-icon"></i></label>
+          </li>
+          <li class="mdui-list-item mdui-ripple">
+            <div class="mdui-list-item-content">
+              <div class="mdui-list-item-title">
+                允许其它脚本依赖
+              </div>
+              <div class="mdui-list-item-text mdui-list-item-one-line xxtouch-tip">
+                允许被其它脚本使用 require 函数引入此脚本模块
+              </div>
+              <div class="mdui-list-item-text mdui-list-item-two-line xxtouch-tip">
+                注意：激活该选项加密后的该脚本接口可能暴露给外部脚本
+              </div>
+            </div><label class="mdui-switch"><input id="allow_external_require" type="checkbox" /> <i
+                class="mdui-switch-icon"></i></label>
+          </li>
+          <div class="mdui-col-md-11 mdui-col-offset-md-1">
+            <br />
+            <div id="dropbox" class="mdui-valign dropbox">
+              <p class="mdui-center"><span data-i18n="文件拖入此处">文件拖入此处</span><br /><span data-i18n="或">或</span><br /><button id="choose_file_upgrade" data-i18n="文件选择"
+                  class="mdui-btn mdui-xxtouch-button mdui-ripple">文件选择</button></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br />
+    <p class="mdui-typo-caption mdui-text-center">Copyright &copy; xxtouch.app</p>
+  </div>
+</body>
+
+</html>

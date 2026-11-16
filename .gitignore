@@ -1,0 +1,15 @@
+# Theos build artifacts
+.theos/
+packages/
+*.deb
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp

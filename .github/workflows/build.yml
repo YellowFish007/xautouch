@@ -1,0 +1,92 @@
+name: Build XAutouch (Theos)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # 门禁 1：与商业 XXTouch 的全量对拍（无需 macOS，先跑）
+  audit:
+    name: 全量对拍 + 静态自检
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 运行 295 项静态自检
+        run: python tests/verify.py
+      - name: 运行 161 项全量对拍
+        run: python tests/audit.py
+
+  # 门禁 2：用现成 theos-action 在 macOS runner 编译三种越狱环境
+  build:
+    name: 编译打包 (${{ matrix.scheme }})
+    needs: audit
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scheme: [rootful, rootless, roothide]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Theos 与 iOS SDK
+        uses: waruhachi/theos-action@v2.6.5
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+          libgcuniversal: 'false'
+          altlist: 'false'
+
+      - name: 编译 tweak + App
+        env:
+          SCHEME: ${{ matrix.scheme }}
+        run: |
+          set -e
+          export FINALPACKAGE=1
+          if [ "$SCHEME" = "rootful" ]; then
+            unset THEOS_PACKAGE_SCHEME || true
+            make clean
+            make package
+          else
+            export THEOS_PACKAGE_SCHEME="$SCHEME"
+            make clean
+            make package
+          fi
+
+      - name: 校验 deb 产物结构
+        run: |
+          set -e
+          echo "== .theos/packages =="
+          ls -la .theos/packages/
+          for deb in .theos/packages/*.deb; do
+            echo "==== $deb ===="
+            dpkg-deb -I "$deb" | head -30
+            echo "-- payload 顶层 --"
+            dpkg-deb -c "$deb" | head -20
+          done
+
+      - name: 上传 deb 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: xautouch-${{ matrix.scheme }}
+          path: .theos/packages/*.deb
+          if-no-files-found: error
+
+  # 汇总三个产物到一个 release 附件（手动触发时）
+  release:
+    name: 汇总构建产物
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: 列出全部产物
+        run: find artifacts -name '*.deb' -exec ls -lh {} \;

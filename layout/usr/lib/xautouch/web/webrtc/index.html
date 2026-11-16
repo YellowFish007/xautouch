@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>X.X.T. 远程控制</title>
+  <script type="module" crossorigin src="./js/main.min.js"></script>
+  <link rel="stylesheet" crossorigin href="./css/style.min.css">
+</head>
+
+<body>
+  <div class="container">
+    <!-- 顶部控制栏 -->
+    <div class="controls">
+      <div class="slider-control">
+        <label for="fpsSlider">FPS:&nbsp;<span id="fpsValue">20</span></label>
+        <input type="range" id="fpsSlider" min="1" max="60" value="20" step="1">
+      </div>
+      <div class="slider-control">
+        <label for="resolutionSlider"><span data-i18n="分辨率">分辨率</span>:&nbsp;<span id="resolutionValue">60%</span></label>
+        <input type="range" id="resolutionSlider" min="25" max="100" value="60" step="5">
+      </div>
+
+      <div class="rotation-group">
+        <!-- 状态显示切换按钮 -->
+        <button id="statsToggleBtn" class="btn btn-stats" title="显示/隐藏状态信息" data-i18n-attr="title">📊</button>
+        <button id="wheelSettingsToggleBtn" class="btn btn-wheel" title="滚轮设置" data-i18n="滚轮" data-i18n-attr="title">滚轮</button>
+        <span class="divider">|</span>
+        <!-- 旋转控制组 -->
+        <span class="rotation-label"><span data-i18n="旋转">旋转</span>:</span>
+        <button class="rotate-btn active" data-rotation="0" title="正常" data-i18n-attr="title">↑</button>
+        <button class="rotate-btn" data-rotation="90" title="右转90°" data-i18n-attr="title">→</button>
+        <button class="rotate-btn" data-rotation="180" title="旋转180°" data-i18n-attr="title">↓</button>
+        <button class="rotate-btn" data-rotation="270" title="左转90°" data-i18n-attr="title">←</button>
+      </div>
+    </div>
+
+    <div class="wheel-settings-panel" id="wheelSettingsPanel">
+      <div class="wheel-settings-panel__toggles">
+        <label>
+          <input type="checkbox" id="wheelEnabledCheckbox">
+          <span data-i18n="启用滚轮滚动">启用滚轮滚动</span>
+        </label>
+        <label>
+          <input type="checkbox" id="wheelNaturalCheckbox">
+          <span data-i18n="自然滚动方向">自然滚动方向</span>
+        </label>
+        <label>
+          <input type="checkbox" id="wheelBrakeEnabledCheckbox">
+          <span data-i18n="滚动刹车">滚动刹车</span>
+        </label>
+      </div>
+      <div class="wheel-settings-panel__sliders">
+        <div class="wheel-settings-panel__field">
+          <label for="wheelStepSlider" data-i18n="滚动步长">滚动步长</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelStepSlider" min="5" max="240" step="1">
+            <span id="wheelStepValue">48px</span>
+          </div>
+        </div>
+        <div class="wheel-settings-panel__field">
+          <label for="wheelCoalesceSlider" data-i18n="合并窗口">合并窗口</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelCoalesceSlider" min="0" max="200" step="5">
+            <span id="wheelCoalesceValue">60ms</span>
+          </div>
+        </div>
+        <div class="wheel-settings-panel__field">
+          <label for="wheelAmpSlider" data-i18n="滚动加速">滚动加速</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelAmpSlider" min="0" max="1" step="0.01">
+            <span id="wheelAmpValue">0.18</span>
+          </div>
+        </div>
+        <div class="wheel-settings-panel__field">
+          <label for="wheelDurBaseSlider" data-i18n="基础时长">基础时长</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelDurBaseSlider" min="20" max="800" step="5">
+            <span id="wheelDurBaseValue">50ms</span>
+          </div>
+        </div>
+        <div class="wheel-settings-panel__field">
+          <label for="wheelReleaseDelaySlider" data-i18n="抬起前延迟">抬起前延迟</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelReleaseDelaySlider" min="0" max="500" step="10">
+            <span id="wheelReleaseDelayValue">120ms</span>
+          </div>
+        </div>
+        <div class="wheel-settings-panel__field">
+          <label for="wheelBrakeReverseSlider" data-i18n="刹车回头像素">刹车回头像素</label>
+          <div class="wheel-settings-panel__field-row">
+            <input type="range" id="wheelBrakeReverseSlider" min="2" max="20" step="1">
+            <span id="wheelBrakeReverseValue">5px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 视频容器 -->
+    <div class="video-container">
+      <div class="video-wrapper">
+        <video id="remoteVideo" autoplay muted playsinline></video>
+      </div>
+    </div>
+
+    <!-- 底部工具栏 -->
+    <div class="bottom-toolbar">
+      <button id="homeBtn" class="btn btn-info" title="返回主屏幕" data-i18n="主屏幕" data-i18n-attr="title">🏠 主屏幕</button>
+      <button id="volumeDownBtn" class="btn btn-secondary" title="音量-">🔉 -</button>
+      <button id="volumeUpBtn" class="btn btn-secondary" title="音量+">🔊 +</button>
+      <button id="lockScreenBtn" class="btn btn-warning" title="锁定屏幕" data-i18n="锁屏" data-i18n-attr="title">🔒 锁屏</button>
+      <button id="hardwareKeyboardBtn" class="btn btn-keyboard" title="连接硬件键盘" data-i18n="连接键盘" data-i18n-attr="title"
+        aria-pressed="false">⌨️ 连接键盘</button>
+      <button id="hardwareMouseBtn" class="btn btn-mouse" title="连接硬件鼠标" data-i18n="连接鼠标" data-i18n-attr="title"
+        aria-pressed="false">🖱️ 连接鼠标</button>
+      <button id="copyBtn" class="btn btn-success" title="从设备复制" data-i18n="拷贝" data-i18n-attr="title">📑 拷贝</button>
+      <button id="pasteBtn" class="btn btn-primary" title="粘贴剪贴板内容到设备" data-i18n="粘贴" data-i18n-attr="title">📋 粘贴</button>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="stats" id="stats">
+      <div class="stat-item">
+        <span class="stat-label"><span data-i18n="状态">状态</span>:</span>
+        <span class="stat-value" id="connectionState" data-i18n="未连接">未连接</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><span data-i18n="分辨率">分辨率</span>:</span>
+        <span class="stat-value" id="resolution">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><span data-i18n="帧率">帧率</span>:</span>
+        <span class="stat-value" id="framerate">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><span data-i18n="比特率">比特率</span>:</span>
+        <span class="stat-value" id="bitrate">-</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><span data-i18n="延迟">延迟</span>:</span>
+        <span class="stat-value" id="latency">-</span>
+      </div>
+    </div>
+
+    <!-- 剪贴板传输进度条 -->
+    <div class="clipboard-progress" id="clipboardProgress">
+      <div class="clipboard-progress-title" id="clipboardProgressTitle" data-i18n="正在传输剪贴板数据...">正在传输剪贴板数据...</div>
+      <div class="clipboard-progress-bar">
+        <div class="clipboard-progress-fill" id="clipboardProgressFill" style="width: 0%"></div>
+      </div>
+      <div class="clipboard-progress-text" id="clipboardProgressText">0 / 0</div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="message" class="message"></div>
+
+    <!-- 键盘指示器 -->
+    <div id="keyboardIndicator" class="keyboard-indicator"></div>
+  </div>
+
+  <!-- 加载主应用 -->
+</body>
+
+</html>

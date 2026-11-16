@@ -1,0 +1,116 @@
+#!/bin/sh
+# XAutouch postinst - 四环境适配、资源迁移、权限、守护进程、重签名
+set +e
+
+# 1) 探测越狱环境
+MODE="rootful"; ROOT=""
+if [ -d /rootfs/usr/lib ]; then
+    MODE="roothide"; ROOT="/rootfs"
+elif [ -d /var/jb/usr/lib ]; then
+    MODE="rootless"; ROOT="/var/jb"
+    if [ ! -d /Applications/Cydia.app ] && [ ! -d /Applications/Sileo.app ]; then
+        MODE="trollstore"
+    fi
+fi
+
+if [ -n "$ROOT" ]; then
+    PREFIX="$ROOT/usr/lib/xautouch"
+    PLAIST="$ROOT/Library/LaunchDaemons/app.xautouch.agent.plist"
+else
+    PREFIX="/usr/lib/xautouch"
+    PLAIST="/Library/LaunchDaemons/app.xautouch.agent.plist"
+fi
+echo "XAutouch: environment=$MODE prefix=$PREFIX"
+
+# dpkg 把文件装到 /usr/lib/xautouch；rootless/roothide 下迁移到真实前缀
+if [ "$PREFIX" != "/usr/lib/xautouch" ] && [ -d /usr/lib/xautouch ]; then
+    mkdir -p "$PREFIX"
+    cp -a /usr/lib/xautouch/. "$PREFIX/" >/dev/null 2>&1
+    echo "XAutouch: migrated /usr/lib/xautouch -> $PREFIX"
+fi
+
+# 守护脚本可执行
+chmod 755 "$PREFIX/bin/xautouchd" 2>/dev/null
+sed -i "" "s#^PREFIX=.*#PREFIX=$PREFIX#" "$PREFIX/bin/xautouchd" 2>/dev/null || \
+sed -i "s#^PREFIX=.*#PREFIX=$PREFIX#" "$PREFIX/bin/xautouchd" 2>/dev/null
+
+# 2) 目录结构
+mkdir -p "$PREFIX"/{scripts,captures,logs,templates,recycle,tmp,web,lua,bin} 2>/dev/null
+
+# 3) 从 bak 恢复用户数据
+for B in "$PREFIX".bak.*; do
+    [ -d "$B-scripts" ] && cp -a "$B-scripts/." "$PREFIX/scripts/" >/dev/null 2>&1
+    [ -f "$B-conf" ] && cp -a "$B-conf" "$PREFIX/user_conf.plist" >/dev/null 2>&1
+done
+
+# 4) 默认脚本（真实 Lua 5.4，使用 xtouch 模块）
+if [ ! -f "$PREFIX/scripts/demo.lua" ]; then
+cat > "$PREFIX/scripts/demo.lua" <<'LUA'
+-- XAutouch 演示脚本
+xtouch.log("demo started")
+xtouch.tap(200, 400)
+xtouch.sleep(300)
+xtouch.swipe(200, 600, 600, 600, 400)
+local shot = xtouch.snapshot()
+xtouch.log("snapshot: " .. tostring(shot))
+local hit = xtouch.findImage("button.png", 0.9)
+if hit.found then
+  xtouch.tap(hit.x, hit.y)
+end
+LUA
+fi
+if [ ! -f "$PREFIX/scripts/recording.lua" ]; then
+cat > "$PREFIX/scripts/recording.lua" <<'LUA'
+-- 录制 -> 回放示例
+local events = xtouch.record_stop()
+xtouch.log("recorded " .. tostring(#events) .. " events")
+xtouch.playback(events)
+LUA
+fi
+
+# 5) 权限与代码签名
+chown -R root:wheel "$PREFIX" 2>/dev/null
+chmod -R 755 "$PREFIX" 2>/dev/null
+chmod 666 "$PREFIX/user_conf.plist" 2>/dev/null
+chmod 777 "$PREFIX"/{captures,logs,tmp,recycle} 2>/dev/null
+
+# 5b) 完整签名链（对标 fastPathSign）：source 工具脚本后逐个签名，
+#     失败不阻断安装，但打印明确原因，便于在 /api/system/sign-status 复核。
+SIGN_TOOL="$PREFIX/../DEBIAN/sign-tools.sh"
+[ -f "$SIGN_TOOL" ] || SIGN_TOOL="/var/lib/dpkg/info/app.xautouch.ios.sign-tools.sh"
+if [ -f "$SIGN_TOOL" ]; then
+    . "$SIGN_TOOL"
+    echo "XAutouch: sign tools loaded ($(xt_sign_status 2>/dev/null | head -1))"
+fi
+
+for BIN in /usr/lib/TweakInject/XAutouch.dylib "$ROOT/usr/lib/TweakInject/XAutouch.dylib"; do
+    [ -f "$BIN" ] || continue
+    chmod 755 "$BIN"
+    chown root:wheel "$BIN"
+    if command -v xt_sign_file >/dev/null 2>&1; then
+        xt_sign_file "$BIN" || echo "XAutouch: warning - sign failed for $BIN"
+    elif command -v ldid >/dev/null 2>&1; then
+        ldid -S "$BIN" >/dev/null 2>&1 || echo "XAutouch: warning - ldid failed for $BIN"
+    fi
+done
+
+# 文件管理器 App 内所有 Mach-O 重签名
+if [ -d "$ROOT/Applications/XXTExplorer.app" ] && command -v xt_resign_bundle >/dev/null 2>&1; then
+    xt_resign_bundle "$ROOT/Applications/XXTExplorer.app" || \
+        echo "XAutouch: warning - explorer resign had failures"
+fi
+
+# 6) LaunchDaemon
+if [ -f "$PLAIST" ]; then
+    chmod 644 "$PLAIST"
+    chown root:wheel "$PLAIST"
+    launchctl unload "$PLAIST" >/dev/null 2>&1
+    launchctl load "$PLAIST" >/dev/null 2>&1
+fi
+
+# 7) 刷新图标缓存并重启桌面使 tweak 注入生效
+if command -v uicache >/dev/null 2>&1; then uicache -r >/dev/null 2>&1; fi
+killall -9 SpringBoard >/dev/null 2>&1
+
+echo "XAutouch: installed ($MODE)"
+exit 0

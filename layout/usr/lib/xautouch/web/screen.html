@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,minimal-ui" />
+  <meta http-equiv="X-UA-Compatible" content="edge" />
+  <meta name="renderer" content="webkit" />
+  <title>X.X.T.</title>
+  <link rel="apple-touch-icon" href="/xxtouch.png" />
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <script type="text/javascript" src="mdui/js/mdui.min.js"></script>
+  <script type="text/javascript" src="js/base64.min.js"></script>
+  <script type="text/javascript" src="js/i18n.js"></script>
+  <script type="text/javascript" src="js/xxtouch_web.js"></script>
+  <script type="text/javascript">
+    window.clipboardDialogOpen = false;
+    window.wheelSettingsDialogOpen = false;
+
+    // 确保在页面加载完成后运行(早于screen.js加载)
+    window.addEventListener('DOMContentLoaded', function () {
+      // 确保在页面完全加载后绑定事件处理函数
+      setTimeout(function () {
+        // 绑定剪贴板按钮点击事件
+        document.getElementById('open-clipboard-dialog').addEventListener('click', function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+          handleClipboardClick();
+        }, true);
+
+        // 对对话框内所有事件进行特殊处理
+        document.getElementById('clipboard-dialog').addEventListener('click', function (e) {
+          // 不要阻止事件传播，只有当点击的不是按钮时才阻止
+          if (e.target.id !== 'send-to-clipboard' &&
+            e.target.id !== 'close-clipboard-dialog' &&
+            !e.target.closest('#send-to-clipboard') &&
+            !e.target.closest('#close-clipboard-dialog')) {
+            e.stopPropagation();
+          }
+        }, true);
+
+        // 绑定关闭按钮事件
+        document.getElementById('close-clipboard-dialog').addEventListener('click', function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+          closeClipboardDialog();
+          return false;
+        }, true);
+
+        // 绑定发送按钮事件
+        document.getElementById('send-to-clipboard').addEventListener('click', function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+          sendToClipboard();
+          return false;
+        }, true);
+
+        // 绑定对话框背景点击事件
+        document.getElementById('clipboard-overlay').addEventListener('click', function (e) {
+          if (e.target === this) {
+            e.stopPropagation();
+            e.preventDefault();
+            closeClipboardDialog();
+          }
+        }, true);
+
+        // 处理文本框键盘事件
+        document.getElementById('clipboard-text').addEventListener('keydown', function (e) {
+          e.stopPropagation();
+          return true;
+        }, true);
+      }, 500);
+    });
+
+    // 处理剪贴板按钮点击的函数
+    function handleClipboardClick() {
+      if (window.wheelSettingsDialogOpen && typeof window.closeWheelSettingsDialog === 'function') {
+        window.closeWheelSettingsDialog();
+      }
+
+      // 显示对话框和加载动画
+      document.getElementById('clipboard-overlay').style.display = 'block';
+      document.getElementById('clipboard-dialog').style.display = 'block';
+      document.getElementById('clipboard-loading').style.display = 'block';
+      document.getElementById('clipboard-text').value = ''; // 清空之前的内容
+
+      // 设置对话框状态为打开
+      window.clipboardDialogOpen = true;
+
+      // 对所有键盘事件实施特殊处理
+      activateSpecialEventHandling();
+
+      // 发送请求读取设备剪贴板
+      $.ajax({
+        url: '/api/pasteboard/read',
+        type: 'GET',
+        success: function (response, status, xhr) {
+          // 隐藏加载动画
+          document.getElementById('clipboard-loading').style.display = 'none';
+
+          // 检查Content-Type是否为文本类型
+          var contentType = xhr.getResponseHeader('Content-Type');
+
+          if (contentType && contentType.indexOf('text/') !== -1) {
+            // 是文本类型，显示在文本区域
+            document.getElementById('clipboard-text').value = response;
+            mdui.snackbar({
+              message: '已读取设备剪贴板文本',
+              position: 'bottom'
+            });
+          } else {
+            // 非文本类型
+            mdui.snackbar({
+              message: '设备剪贴板不包含文本内容',
+              position: 'bottom'
+            });
+          }
+        },
+        error: function (xhr, status, error) {
+          // 隐藏加载动画
+          document.getElementById('clipboard-loading').style.display = 'none';
+
+          mdui.snackbar({
+            message: '读取剪贴板失败: ' + error,
+            position: 'bottom'
+          });
+        }
+      });
+    }
+
+    // 关闭对话框函数
+    function closeClipboardDialog() {
+      document.getElementById('clipboard-overlay').style.display = 'none';
+      document.getElementById('clipboard-dialog').style.display = 'none';
+      document.getElementById('clipboard-loading').style.display = 'none';
+
+      // 设置对话框状态为关闭
+      window.clipboardDialogOpen = false;
+
+      // 恢复正常的事件处理
+      deactivateSpecialEventHandling();
+    }
+
+    // 发送到剪贴板函数
+    function sendToClipboard() {
+      var clipboardText = document.getElementById('clipboard-text').value;
+
+      if (clipboardText) {
+        $.ajax({
+          url: '/api/pasteboard/write',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            "uti": "public.plain-text",
+            "data": clipboardText
+          }),
+          success: function (response) {
+            mdui.snackbar({
+              message: '文本已发送到设备剪贴板',
+              position: 'bottom'
+            });
+
+            closeClipboardDialog();
+          },
+          error: function (xhr, status, error) {
+            mdui.snackbar({
+              message: '发送失败: ' + error,
+              position: 'bottom'
+            });
+          }
+        });
+      } else {
+        mdui.snackbar({
+          message: '请先输入文本',
+          position: 'bottom'
+        });
+      }
+    }
+
+    // 特殊事件处理 - 对全局事件拦截器的临时覆盖
+    var originalKeyDownHandler = null;
+    var originalKeyUpHandler = null;
+
+    function activateSpecialEventHandling() {
+      // 保存原始的键盘事件处理函数
+      if (document.onkeydown) {
+        originalKeyDownHandler = document.onkeydown;
+        document.onkeydown = function (e) {
+          // 检查事件是否来自对话框内部
+          if (window.clipboardDialogOpen && e.target && (
+            e.target.id === 'clipboard-text' ||
+            e.target.closest('#clipboard-dialog'))) {
+            return true; // 允许默认行为
+          }
+          // 否则使用原始处理程序
+          return originalKeyDownHandler.call(this, e);
+        };
+      }
+
+      if (document.onkeyup) {
+        originalKeyUpHandler = document.onkeyup;
+        document.onkeyup = function (e) {
+          // 检查事件是否来自对话框内部
+          if (window.clipboardDialogOpen && e.target && (
+            e.target.id === 'clipboard-text' ||
+            e.target.closest('#clipboard-dialog'))) {
+            return true; // 允许默认行为
+          }
+          // 否则使用原始处理程序
+          return originalKeyUpHandler.call(this, e);
+        };
+      }
+    }
+
+    function deactivateSpecialEventHandling() {
+      // 恢复原始的键盘事件处理函数
+      if (originalKeyDownHandler) {
+        document.onkeydown = originalKeyDownHandler;
+        originalKeyDownHandler = null;
+      }
+
+      if (originalKeyUpHandler) {
+        document.onkeyup = originalKeyUpHandler;
+        originalKeyUpHandler = null;
+      }
+    }
+
+    // 添加全局点击处理，确保对话框内的按钮点击能被捕获
+    window.addEventListener('click', function (e) {
+      if (window.clipboardDialogOpen) {
+        // 检查点击的是否是我们的按钮
+        if (e.target.id === 'send-to-clipboard' || e.target.closest('#send-to-clipboard')) {
+          e.stopPropagation();
+          e.preventDefault();
+          sendToClipboard();
+          return false;
+        } else if (e.target.id === 'close-clipboard-dialog' || e.target.closest('#close-clipboard-dialog')) {
+          e.stopPropagation();
+          e.preventDefault();
+          closeClipboardDialog();
+          return false;
+        }
+      }
+    }, true);
+  </script>
+  <script type="text/javascript" src="js/remote_wheel.js"></script>
+  <script type="text/javascript" src="js/remote_touch_allocator.js"></script>
+  <script type="text/javascript" src="/_1nfo_.js"></script>
+  <script type="text/javascript" src="screen.js"></script>
+  <link rel="stylesheet" href="mdui/css/mdui.min.css" />
+  <link rel="stylesheet" href="css/xxtouch_web.css" />
+  <link rel="icon" href="/xxtouch.png" type="image/png" />
+  <style>
+    #all_canvas {
+      top: 80px
+    }
+
+    #toggle-hardware-keyboard[aria-disabled="true"],
+    #toggle-hardware-mouse[aria-disabled="true"],
+    #open-wheel-settings-dialog[aria-disabled="true"] {
+      opacity: 0.54;
+      pointer-events: none;
+    }
+
+    #screen-title {
+      min-width: 64px;
+      -webkit-box-flex: 0;
+      -webkit-flex: 0 1 auto;
+      -ms-flex: 0 1 auto;
+      flex: 0 1 auto;
+    }
+
+    #screen-toolbar.screen-toolbar-title-compact #screen-title {
+      min-width: 0;
+      margin-right: 0;
+      margin-left: 0;
+    }
+
+    #screen-toolbar>.screen-toolbar-brand-collapsed {
+      display: none !important;
+    }
+
+    #screen-toolbar>.screen-toolbar-action,
+    #screen-toolbar>.screen-toolbar-pinned {
+      -webkit-flex-shrink: 0;
+      -ms-flex-negative: 0;
+      flex-shrink: 0;
+    }
+
+    #screen-toolbar>.screen-toolbar-action-collapsed,
+    #screen-toolbar-overflow-menu>.screen-toolbar-overflow-item[hidden],
+    #screen-toolbar-more[hidden] {
+      display: none !important;
+    }
+
+    body {
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+      zoom: reset
+    }
+
+    .screen-popup-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10000;
+      background-color: white;
+      padding: 16px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      display: none;
+      width: 92%;
+      max-width: 440px;
+      max-height: 80vh;
+      overflow: hidden;
+    }
+
+    .screen-popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      z-index: 9999;
+      display: none;
+    }
+
+    .screen-popup-scroll {
+      max-height: 62vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .screen-popup-title {
+      margin: 0 0 16px 0;
+    }
+
+    .screen-popup-actions {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .screen-popup-actions .mdui-btn+.mdui-btn {
+      margin-left: 12px;
+    }
+
+    /* 确保对话框内的文本区域可编辑 */
+    .screen-popup-dialog textarea {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      user-select: text;
+    }
+
+    /* 加载中动画 */
+    .clipboard-loading {
+      display: none;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .clipboard-loading .mdui-spinner {
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    .wheel-setting-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .wheel-setting-switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+    }
+
+    .wheel-setting-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .wheel-setting-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    .wheel-setting-desc {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.54);
+      line-height: 1.4;
+    }
+
+    .wheel-setting-slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 2px 0;
+    }
+
+    .wheel-setting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    .wheel-setting-value {
+      font-variant-numeric: tabular-nums;
+      color: rgba(0, 0, 0, 0.54);
+      white-space: nowrap;
+    }
+
+    .wheel-setting-slider {
+      width: 100%;
+      margin: 0;
+    }
+
+    .wheel-settings-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.54);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body class="mdui-drawer-body-left mdui-appbar-with-toolbar mdui-theme-primary-blue mdui-theme-accent-deep-orange">
+  <div class="mdui-drawer" id="main-drawer"></div>
+  <header class="mdui-appbar mdui-appbar-fixed">
+    <div class="mdui-toolbar mdui-xxtouch-color" id="screen-toolbar">
+      <span class="mdui-btn mdui-btn-icon mdui-ripple mdui-ripple-white" mdui-drawer="{target: '#main-drawer'}"><i
+          class="mdui-icon material-icons"></i></span>
+      <a href="./index.html" id="screen-toolbar-brand" class="mdui-typo-headline mdui-hidden-xs">X.X.T.</a>
+      <a href="" id="screen-title" class="mdui-typo-title" data-i18n="实时桌面">实时桌面</a>
+      <div class="mdui-toolbar-spacer"></div>
+
+      <a href="javascript:;" id="screen-toolbar-more"
+        class="screen-toolbar-pinned mdui-btn mdui-btn-icon mdui-ripple" hidden aria-hidden="true"
+        aria-haspopup="true" aria-expanded="false" aria-controls="screen-toolbar-overflow-menu"
+        aria-label="更多操作" mdui-tooltip="{content: '更多操作'}">
+        <i class="mdui-icon material-icons">more_vert</i>
+      </a>
+      <ul class="mdui-menu mdui-menu-cascade" id="screen-toolbar-overflow-menu">
+        <li class="screen-toolbar-overflow-item mdui-menu-item" id="screen-toolbar-menu-mouse" hidden
+          aria-hidden="true">
+          <a href="javascript:;" class="screen-toolbar-overflow-action mdui-ripple"
+            data-toolbar-target="toggle-hardware-mouse" aria-label="连接硬件鼠标" aria-pressed="false"
+            aria-disabled="false">
+            <i class="mdui-menu-item-icon mdui-icon material-icons"
+              id="screen-toolbar-menu-mouse-icon">mouse</i><span
+              id="screen-toolbar-menu-mouse-label">连接硬件鼠标</span>
+          </a>
+        </li>
+        <li class="screen-toolbar-overflow-item mdui-menu-item" id="screen-toolbar-menu-keyboard" hidden
+          aria-hidden="true">
+          <a href="javascript:;" class="screen-toolbar-overflow-action mdui-ripple"
+            data-toolbar-target="toggle-hardware-keyboard" aria-label="连接硬件键盘" aria-pressed="false"
+            aria-disabled="false">
+            <i class="mdui-menu-item-icon mdui-icon material-icons"
+              id="screen-toolbar-menu-keyboard-icon">keyboard</i><span
+              id="screen-toolbar-menu-keyboard-label">连接硬件键盘</span>
+          </a>
+        </li>
+        <li class="screen-toolbar-overflow-item mdui-menu-item" id="screen-toolbar-menu-wheel" hidden
+          aria-hidden="true">
+          <a href="javascript:;" class="screen-toolbar-overflow-action mdui-ripple"
+            data-toolbar-target="open-wheel-settings-dialog" aria-label="滚轮设置" aria-disabled="false">
+            <i class="mdui-menu-item-icon mdui-icon material-icons">unfold_more</i><span>滚轮设置</span>
+          </a>
+        </li>
+        <li class="screen-toolbar-overflow-item mdui-menu-item" id="screen-toolbar-menu-rotate" hidden
+          aria-hidden="true">
+          <a href="javascript:;" class="screen-toolbar-overflow-action mdui-ripple"
+            data-toolbar-target="rotate_turn_left" aria-label="向左旋转90°">
+            <i class="mdui-menu-item-icon mdui-icon material-icons">screen_rotation</i><span>向左旋转90°</span>
+          </a>
+        </li>
+        <li class="screen-toolbar-overflow-item mdui-menu-item" id="screen-toolbar-menu-clipboard" hidden
+          aria-hidden="true">
+          <a href="javascript:;" class="screen-toolbar-overflow-action mdui-ripple"
+            data-toolbar-target="open-clipboard-dialog" aria-label="剪贴板操作">
+            <i class="mdui-menu-item-icon mdui-icon material-icons">content_paste</i><span>剪贴板操作</span>
+          </a>
+        </li>
+      </ul>
+
+      <a href="javascript:;" id="toggle-hardware-mouse"
+        class="screen-toolbar-action mdui-btn mdui-btn-icon mdui-ripple"
+        mdui-tooltip="{content: '连接/断开硬件鼠标'}" aria-label="连接硬件鼠标" aria-pressed="false"
+        aria-disabled="false">
+        <i class="mdui-icon material-icons" id="hardware-mouse-icon">mouse</i>
+      </a>
+
+      <a href="javascript:;" id="toggle-hardware-keyboard"
+        class="screen-toolbar-action mdui-btn mdui-btn-icon mdui-ripple"
+        mdui-tooltip="{content: '连接/断开硬件键盘'}" aria-label="连接硬件键盘" aria-pressed="false"
+        aria-disabled="false">
+        <i class="mdui-icon material-icons" id="hardware-keyboard-icon">keyboard</i>
+      </a>
+
+      <a href="javascript:;" id="open-wheel-settings-dialog"
+        class="screen-toolbar-action mdui-btn mdui-btn-icon mdui-ripple"
+        mdui-tooltip="{content: '滚轮设置'}" aria-label="滚轮设置" aria-disabled="false" onclick="return false;">
+        <i class="mdui-icon material-icons">unfold_more</i>
+      </a>
+
+      <div href="javascript:;" id="rotate_turn_left"
+        class="screen-toolbar-action rotate mdui-btn mdui-btn-icon" data-rotation="0"
+        mdui-tooltip="{content: '向左旋转90°'}" aria-label="向左旋转90°">
+        <i class="mdui-icon material-icons">screen_rotation</i>
+      </div>
+
+      <!-- 添加剪贴板功能按钮 -->
+      <a href="javascript:;" id="open-clipboard-dialog"
+        class="screen-toolbar-action mdui-btn mdui-btn-icon mdui-ripple"
+        mdui-tooltip="{content: '剪贴板操作'}" aria-label="剪贴板操作" onclick="return false;">
+        <i class="mdui-icon material-icons">content_paste</i>
+      </a>
+
+      <div href="javascript:;" id="home" class="screen-toolbar-pinned home mdui-btn mdui-btn-icon">
+        <i class="mdui-icon material-icons"></i>
+      </div>
+      <div href="javascript:;" id="power" class="screen-toolbar-pinned power mdui-btn mdui-btn-icon">
+        <i class="mdui-icon material-icons"></i>
+      </div>
+    </div>
+  </header>
+  <div class="mdui-container-fluid" style="width:100%;text-align:center;margin:0 auto">
+    <canvas id="all_canvas"></canvas>
+  </div>
+
+  <!-- 剪贴板功能对话框 -->
+  <div class="screen-popup-overlay clipboard-overlay" id="clipboard-overlay"></div>
+  <div class="screen-popup-dialog clipboard-dialog" id="clipboard-dialog">
+    <h4 class="mdui-text-center screen-popup-title">剪贴板操作</h4>
+
+    <!-- 加载动画 -->
+    <div class="clipboard-loading" id="clipboard-loading">
+      <div class="mdui-spinner mdui-spinner-colorful"></div>
+      <span>正在读取设备剪贴板...</span>
+    </div>
+
+    <div class="mdui-textfield">
+      <label class="mdui-textfield-label">剪贴板内容</label>
+      <textarea class="mdui-textfield-input" id="clipboard-text" rows="4" placeholder="输入要发送的文本或接收设备剪贴板内容"></textarea>
+    </div>
+    <div class="screen-popup-actions">
+      <button class="mdui-btn mdui-btn-raised mdui-ripple mdui-color-theme-accent" id="send-to-clipboard">
+        发送到设备
+      </button>
+      <button class="mdui-btn mdui-btn-raised mdui-ripple" id="close-clipboard-dialog">
+        关闭
+      </button>
+    </div>
+  </div>
+
+  <div class="screen-popup-overlay wheel-settings-overlay" id="wheel-settings-overlay"></div>
+  <div class="screen-popup-dialog wheel-settings-dialog" id="wheel-settings-dialog">
+    <div class="screen-popup-scroll">
+      <h4 class="mdui-text-center screen-popup-title">滚轮设置</h4>
+      <div class="wheel-setting-list">
+        <div class="wheel-setting-switch">
+          <div class="wheel-setting-copy">
+            <span class="wheel-setting-name">启用滚轮滚动</span>
+            <span class="wheel-setting-desc">开启后，鼠标滚轮会映射成设备端滑动。</span>
+          </div>
+          <label class="mdui-switch">
+            <input id="wheel-enabled" type="checkbox" />
+            <i class="mdui-switch-icon"></i>
+          </label>
+        </div>
+
+        <div class="wheel-setting-switch">
+          <div class="wheel-setting-copy">
+            <span class="wheel-setting-name">自然方向</span>
+            <span class="wheel-setting-desc">开启后，滚轮向下时会触发设备端上滑。</span>
+          </div>
+          <label class="mdui-switch">
+            <input id="wheel-natural" type="checkbox" />
+            <i class="mdui-switch-icon"></i>
+          </label>
+        </div>
+
+        <div class="wheel-setting-switch">
+          <div class="wheel-setting-copy">
+            <span class="wheel-setting-name">末端刹车</span>
+            <span class="wheel-setting-desc">滚动结束时加一点回拉，以阻止 iOS 自带的滚动惯性。</span>
+          </div>
+          <label class="mdui-switch">
+            <input id="wheel-brake-enabled" type="checkbox" />
+            <i class="mdui-switch-icon"></i>
+          </label>
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>步长像素</span>
+            <span class="wheel-setting-value" id="wheel-step-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-step" type="range" min="5" max="1000" step="1" />
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>合并窗口</span>
+            <span class="wheel-setting-value" id="wheel-coalesce-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-coalesce" type="range" min="0" max="200" step="1" />
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>加速度</span>
+            <span class="wheel-setting-value" id="wheel-amp-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-amp" type="range" min="0" max="5" step="0.01" />
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>基础时长</span>
+            <span class="wheel-setting-value" id="wheel-dur-base-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-dur-base" type="range" min="0" max="800" step="1" />
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>释放延迟</span>
+            <span class="wheel-setting-value" id="wheel-release-delay-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-release-delay" type="range" min="0" max="500" step="1" />
+        </div>
+
+        <div class="wheel-setting-slider-row">
+          <div class="wheel-setting-header">
+            <span>刹车回拉像素</span>
+            <span class="wheel-setting-value" id="wheel-brake-reverse-value"></span>
+          </div>
+          <input class="wheel-setting-slider" id="wheel-brake-reverse" type="range" min="2" max="20" step="1" />
+        </div>
+      </div>
+      <div class="wheel-settings-note">默认开启，滚轮向下会映射成设备端上滑。</div>
+    </div>
+    <div class="screen-popup-actions">
+      <button class="mdui-btn mdui-btn-raised mdui-ripple" id="close-wheel-settings-dialog">
+        关闭
+      </button>
+    </div>
+  </div>
+</body>
+
+</html>

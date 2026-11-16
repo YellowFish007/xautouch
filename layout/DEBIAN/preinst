@@ -1,0 +1,29 @@
+#!/bin/sh
+# XAutouch preinst - 升级/降级前清理，兼容 rootful/rootless/roothide/TrollStore
+set +e
+
+echo "XAutouch: preinst - stopping previous instance"
+launchctl unload /Library/LaunchDaemons/app.xautouch.agent.plist >/dev/null 2>&1
+launchctl unload /var/jb/Library/LaunchDaemons/app.xautouch.agent.plist >/dev/null 2>&1
+killall -9 XAutouchAgent >/dev/null 2>&1
+killall -9 SpringBoard >/dev/null 2>&1
+
+# 备份用户脚本与配置，避免升级覆盖
+for PREFIX in /var/jb/usr/lib/xautouch /usr/lib/xautouch /rootfs/usr/lib/xautouch; do
+    if [ -d "$PREFIX" ]; then
+        BACKUP="${PREFIX}.bak.$(date +%s)"
+        cp -a "$PREFIX/scripts" "$BACKUP-scripts" >/dev/null 2>&1
+        cp -a "$PREFIX/user_conf.plist" "$BACKUP-conf" >/dev/null 2>&1
+        echo "XAutouch: backup -> $BACKUP"
+        break
+    fi
+done
+
+# iOS < 13 移除重型识别引擎资源（对齐参照对象行为）
+IOS_VER=$(sw_vers -productVersion 2>/dev/null || uname -r)
+case "$IOS_VER" in
+  9.*|10.*|11.*|12.*)
+    find / -path '*xautouch*' \( -name 'onnxruntime*' -o -name 'ncnn*' -o -name 'tess_ocr*' \) -delete >/dev/null 2>&1
+    ;;
+esac
+exit 0
