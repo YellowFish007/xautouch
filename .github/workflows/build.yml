@@ -34,14 +34,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 安装 Theos 与 iOS SDK
-        uses: waruhachi/theos-action@v2.6.5
+        uses: waruhachi/theos-action@v2.6.6
         with:
-          theos-src: 'theos/theos'
-          theos-branch: 'master'
-          sdks-src: 'theos/sdks'
-          sdks-branch: 'master'
+          # roothide scheme 仅在 waruhachi/theos 的 main 分支提供；
+          # 官方 theos/theos master 会报 "roothide package scheme does not exist"。
+          theos-src: 'waruhachi/theos'
+          theos-branch: 'main'
+          sdks-src: 'waruhachi/sdks'
+          sdks-branch: 'main'
           libgcuniversal: 'false'
           altlist: 'false'
+          comet: 'false'
+          orion: 'false'
+          shook: 'false'
+          libsandy: 'false'
+          remotelog: 'false'
 
       - name: 编译 tweak + App
         env:
