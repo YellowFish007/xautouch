@@ -18,12 +18,19 @@
 #import "XTUDPControl.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
+#import <netinet/tcp.h>
 #import <arpa/inet.h>
 #import <unistd.h>
 #import <errno.h>
 #import <string.h>
 #import <time.h>
 #import <CommonCrypto/CommonDigest.h>
+
+// dispatchRequest: 在 XTRoutes.mm 的 category 中实现；此处前向声明避免
+// -Wincomplete-implementation（Theos 默认 -Werror）误报。
+@interface XTHTTPServer (XTRoutesForward)
+- (nullable XTHTTPResponse *)dispatchRequest:(XTHTTPRequest *)req;
+@end
 
 #pragma mark - XTHTTPRequest
 
@@ -104,7 +111,7 @@
                                     _bodyData.length - hb.location - 4)];
             // 去掉结尾 CRLF
             if (payload.length >= 2) {
-                const char *bytes = payload.bytes;
+                const char *bytes = (const char *)payload.bytes;
                 if (bytes[payload.length-2] == '\r' && bytes[payload.length-1] == '\n') {
                     payload = [payload subdataWithRange:NSMakeRange(0, payload.length-2)];
                 }
@@ -376,7 +383,7 @@ static ssize_t XTReadHeaders(int fd, NSMutableData *buf) {
 
     NSMutableData *out = [NSMutableData dataWithData:[h dataUsingEncoding:NSUTF8StringEncoding]];
     [out appendData:resp.body];
-    const char *bytes = out.bytes;
+    const char *bytes = (const char *)out.bytes;
     NSUInteger sent = 0;
     while (sent < out.length) {
         ssize_t n = send(fd, bytes + sent, out.length - sent, 0);
@@ -405,7 +412,7 @@ static ssize_t XTReadHeaders(int fd, NSMutableData *buf) {
                     (unsigned long)jpg.length];
                 const char *ph = partHdr.UTF8String;
                 if (send(fd, ph, strlen(ph), 0) <= 0) break;
-                const unsigned char *b = jpg.bytes;
+                const unsigned char *b = (const unsigned char *)jpg.bytes;
                 NSUInteger sent = 0;
                 while (sent < jpg.length) {
                     ssize_t n = send(fd, b + sent, jpg.length - sent, 0);
@@ -500,7 +507,7 @@ static NSString *XTWebSocketAccept(NSString *key) {
         NSMutableData *payload = [NSMutableData dataWithLength:len];
         if (recv(fd, payload.mutableBytes, len, MSG_WAITALL) != (ssize_t)len) break;
         if (masked) {
-            unsigned char *p = payload.mutableBytes;
+            unsigned char *p = (unsigned char *)payload.mutableBytes;
             for (NSUInteger i=0;i<len;i++) p[i] ^= mask[i%4];
         }
         NSString *text = [[NSString alloc] initWithData:payload encoding:NSUTF8StringEncoding] ?: @"";

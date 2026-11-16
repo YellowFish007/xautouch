@@ -10,6 +10,8 @@ include $(THEOS)/makefiles/common.mk
 
 # 与 control 的 firmware >= 12.0 对齐，避免可用性告警触发 -Werror
 TARGET = iphone:clang:latest:12.0
+# iOS 12+ 全为 64 位；限定架构避免 armv7 上私有头文件与 IOKit 头文件报错
+ARCHS = arm64 arm64e
 
 # ---------------------------------------------------------------- 实例 1：tweak
 TWEAK_NAME = XAutouch
@@ -41,7 +43,7 @@ XAutouch_FILES = Sources/Tweak.xm \
 XAutouch_FRAMEWORKS = Foundation UIKit CoreGraphics QuartzCore IOKit Vision \
                       VideoToolbox CoreMedia CoreVideo AVFoundation AudioToolbox ImageIO
 XAutouch_PRIVATE_FRAMEWORKS = BackBoardServices SpringBoardServices GraphicsServices
-XAutouch_CFLAGS = -fobjc-arc -std=c++17 -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access
+XAutouch_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Ivendor/lua/src -Wno-unused-parameter -Wno-objc-method-access -Wno-incomplete-implementation
 XAutouch_LDFLAGS = -Wl,-undefined,dynamic_lookup $(LUA_SOURCES)
 
 include $(THEOS_MAKE_PATH)/tweak.mk
@@ -55,7 +57,7 @@ XXTExplorer_FILES = Sources/XXTExplorer/main.m \
                     Sources/XXTExplorer/XTEFileListController.mm \
                     Sources/XXTExplorer/XTEFileEditorController.mm
 XXTExplorer_FRAMEWORKS = Foundation UIKit CoreGraphics
-XXTExplorer_CFLAGS = -fobjc-arc -std=c++17 -Wno-unused-parameter
+XXTExplorer_CFLAGS = -fobjc-arc -std=c++17 -fno-modules -Wno-unused-parameter
 # 声明为资源随应用打包（阶段 1 编译期不拷贝，阶段 2 打包时嵌入 .app）
 XXTExplorer_RESOURCE_FILES = Sources/XXTExplorer/Info.plist
 XXTExplorer_INSTALL_PATH = /Applications

@@ -18,7 +18,11 @@
 #import <stdlib.h>
 #import <sys/sysctl.h>
 #import <sys/proc.h>
+#import <sys/wait.h>
+#import <spawn.h>
 #import <unistd.h>
+
+extern char **environ;
 
 @implementation XTApplication {
     NSString *_environment;
@@ -263,7 +267,16 @@ static NSString *_resourceRoot = @"/var/jb/usr/lib/xautouch";
     if (!command.length) return @{@"code":@-1, @"error":@"empty command"};
     NSString *outPath = [NSString stringWithFormat:@"%@/tmp/spawn.out", _resourceRoot];
     NSString *full = [NSString stringWithFormat:@"(%@) > \"%@\" 2>&1", command, outPath];
-    int rc = system(full.UTF8String);
+    // system() 在 iOS SDK 不可用；用 posix_spawn 调 /bin/sh -c 等价执行。
+    const char *argv[] = { "/bin/sh", "-c", full.UTF8String, NULL };
+    pid_t pid = -1;
+    int spawnRC = posix_spawn(&pid, "/bin/sh", NULL, NULL, (char *const *)argv, environ);
+    int rc = -1;
+    if (spawnRC == 0) {
+        int status = 0;
+        waitpid(pid, &status, 0);
+        rc = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    }
     NSString *out = [NSString stringWithContentsOfFile:outPath encoding:NSUTF8StringEncoding error:nil] ?: @"";
     return @{@"code":@(rc), @"command":command, @"output":out};
 }
