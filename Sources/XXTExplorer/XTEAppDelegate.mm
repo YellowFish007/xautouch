@@ -32,7 +32,7 @@ didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [self.window makeKeyAndVisible];
 
     // APIClient 保证回调在主线程；weak 避免 block 持有列表控制器。
-    __weak typeof(listController) weakList = listController;
+    __weak __typeof__(listController) weakList = listController;
     [[XTEAPIClient sharedClient] fetchResourceRoot:^(NSString *root, NSError *error) {
         XTEFileListController *strongList = weakList;
         if (!strongList) return;

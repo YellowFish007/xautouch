@@ -104,10 +104,10 @@ static BOOL XTEIsImagePath(NSString *path) {
 #pragma mark - 文本读写
 
 - (void)loadText {
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] readFile:self.filePath
         completion:^(NSString *content, NSError *error) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
+            __strong __typeof__(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             if (error) {
                 [strongSelf showMessage:error.localizedDescription title:@"读取失败"];
@@ -120,7 +120,7 @@ static BOOL XTEIsImagePath(NSString *path) {
 - (void)saveFile {
     if (self.imageMode) return;
     NSString *content = self.textView.text ?: @"";
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] writeFile:self.filePath content:content
         completion:^(NSError *error) {
             if (error) {
@@ -135,7 +135,7 @@ static BOOL XTEIsImagePath(NSString *path) {
 
 - (void)runScript {
     if (self.imageMode) return;
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] launchScriptFile:self.filePath
         completion:^(NSDictionary *result, NSError *error) {
             if (error) {
@@ -157,7 +157,7 @@ static BOOL XTEIsImagePath(NSString *path) {
 
 - (void)checkSyntax {
     if (self.imageMode) return;
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] checkSyntax:self.textView.text ?: @""
         completion:^(NSArray<NSDictionary *> *diagnostics, NSError *error) {
             if (error) {
@@ -183,7 +183,7 @@ static BOOL XTEIsImagePath(NSString *path) {
 #pragma mark - 图片预览
 
 - (void)loadImage {
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     void (^render)(NSData *) = ^(NSData *data) {
         UIImage *image = [UIImage imageWithData:data];
         if (!image) {

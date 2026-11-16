@@ -326,5 +326,17 @@ check("Vision OCR 有 @available 版本保护",
       "@available(iOS 13.0" in read("Sources/XTVision.mm"))
 check("Makefile 限定 64 位架构", "ARCHS" in read("Makefile") and "arm64" in read("Makefile"))
 
+# Objective-C++ 下裸 typeof() 不可用，必须写 __typeof__()
+_ocpp = "".join(read(os.path.relpath(os.path.join(dp, f), ROOT))
+                for dp, _, fs in os.walk(SRC) for f in fs if f.endswith((".mm", ".m")))
+check("未使用 Objective-C++ 不兼容的裸 typeof()",
+      _re.search(r"(?<!__)\btypeof\s*\(", _ocpp) is None)
+# void* 不能隐式转成具体指针（C++ 严格模式）
+check("NSData bytes 赋值均显式转型",
+      _re.search(r"^\s*(const\s+)?(unsigned\s+)?char\s*\*\s*\w+\s*=\s*[^;()]*\.(mutable)?[Bb]ytes\s*;",
+                 _ocpp, _re.M) is None)
+check("签名器未重复定义系统类 NSPipe",
+      "@interface NSPipe" not in read("Sources/XTCodeSigner.mm"))
+
 print(f"\n结果: {passed} PASS, {failed} FAIL")
 sys.exit(1 if failed else 0)

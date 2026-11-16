@@ -91,10 +91,10 @@ static NSString *XTEPercentEncode(NSString *value) {
                body:(NSDictionary *)body
          completion:(void (^)(NSDictionary *json, NSError *error))completion {
     NSURLRequest *request = [self requestWithPath:path method:method params:params body:body];
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
         completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
+            __strong __typeof__(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (completion) completion(nil, XTEMakeError(-9, @"API 客户端已释放"));
@@ -331,10 +331,10 @@ static NSString *XTEPercentEncode(NSString *value) {
                            [segments componentsJoinedByString:@"/"]];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
 
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
         completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
+            __strong __typeof__(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (completion) completion(nil, XTEMakeError(-9, @"API 客户端已释放"));

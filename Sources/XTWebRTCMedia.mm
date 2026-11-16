@@ -313,12 +313,12 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
     _audioUseSilence = NO;
 
     // weakSelf 避免 dealloc 路径中 block 强捕获正在释放的 self
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
 
     // 在 captureQueue 上异步释放编码器：保证在途的 captureOneFrame 先完成，
     // 又不在主线程同步等待它（captureOneFrame 会同步切主线程截图，避免死锁）。
     dispatch_async(_captureQueue, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (me && me->_vtSession) {
             VTCompressionSessionInvalidate(me->_vtSession);
             CFRelease(me->_vtSession);
@@ -328,7 +328,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
 
     // 在 audioQueue 上同步释放转换器：tap 与静音定时器已停，等待在途编码完成后销毁
     dispatch_sync(_audioQueue, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (me && me->_aacConverter) {
             AudioConverterDispose(me->_aacConverter);
             me->_aacConverter = NULL;
@@ -337,7 +337,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
 
     // 在 socketQueue 上同步关闭 socket（本方法不会从 socketQueue 调用，无死锁风险）
     dispatch_sync(_socketQueue, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (!me) return;
         if (me->_sockfd >= 0) {
             close(me->_sockfd);
@@ -456,9 +456,9 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
         if (!addr) return;
         NSString *host = addr[@"host"];
         uint16_t port = (uint16_t)[addr[@"port"] unsignedIntegerValue];
-        __weak typeof(self) weakSelf = self;
+        __weak __typeof__(self) weakSelf = self;
         dispatch_async(_socketQueue, ^{
-            typeof(self) me = weakSelf;
+            __typeof__(self) me = weakSelf;
             if (!me) return;
             struct sockaddr_in na;
             memset(&na, 0, sizeof(na));
@@ -477,9 +477,9 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
 #pragma mark - Socket
 
 - (void)setupSocketWithHost:(NSString *)host port:(uint16_t)port {
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     dispatch_sync(_socketQueue, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (!me) return;
         int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (fd < 0) { me->_sockfd = -1; return; }
@@ -527,9 +527,9 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
     dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _captureQueue);
     uint64_t interval = (uint64_t)((1.0 / (double)MAX(1, (int)_fps)) * (double)NSEC_PER_SEC);
     dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 0), interval, interval / 4);
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     dispatch_source_set_event_handler(timer, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (me && me->_running.load()) [me captureOneFrame];
     });
     _captureTimer = timer;
@@ -776,7 +776,7 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
         [pkt appendBytes:(bytes + off) length:len];
 
         // 编码回调/音频线程不直接 sendto，异步投递到 socketQueue（无阻塞）
-        __weak typeof(self) weakSelf = self;
+        __weak __typeof__(self) weakSelf = self;
         dispatch_async(_socketQueue, ^{
             [weakSelf sendPacket:pkt];
         });
@@ -856,9 +856,9 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
     dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _audioQueue);
     uint64_t interval = (uint64_t)((kXTAACFramesPerPacket / kXTAACSampleRate) * (double)NSEC_PER_SEC);
     dispatch_source_set_timer(timer, dispatch_time(DISPATCH_TIME_NOW, 0), interval, interval / 4);
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     dispatch_source_set_event_handler(timer, ^{
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (!me || !me->_running.load() || !me->_aacConverter) return;
         NSMutableData *silence = [NSMutableData dataWithLength:
                                   (NSUInteger)kXTAACFramesPerPacket * sizeof(float)];
@@ -882,11 +882,11 @@ static OSStatus XTAACInputProc(AudioConverterRef inAudioConverter,
                                                              channels:1
                                                           interleaved:NO];
     dispatch_queue_t aq = _audioQueue;
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [input installTapOnBus:0 bufferSize:(AVAudioFrameCount)kXTAACFramesPerPacket format:mono
                      block:^(AVAudioPCMBuffer *buffer, AVAudioTime *when) {
         (void)when;
-        typeof(self) me = weakSelf;
+        __typeof__(self) me = weakSelf;
         if (!me) return;
         uint32_t frames = buffer.frameLength;
         float *ch = buffer.floatChannelData ? buffer.floatChannelData[0] : NULL;

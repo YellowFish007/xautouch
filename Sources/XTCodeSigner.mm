@@ -22,12 +22,8 @@
 #if __has_include(<Foundation/NSTask.h>)
 #import <Foundation/NSTask.h>
 #else
-@interface NSPipe : NSObject
-+ (instancetype)pipe;
-@property (nonatomic, readonly) NSFileHandle *fileHandleForReading;
-@property (nonatomic, readonly) NSFileHandle *fileHandleForWriting;
-@end
-
+// NSPipe 在 iPhoneOS SDK 的 Foundation 中已有声明，此处不可重复定义（否则
+// "duplicate interface definition for class 'NSPipe'"）；只补 NSTask 的最小声明。
 @interface NSTask : NSObject
 @property (nonatomic, copy, nullable) NSString *launchPath;
 @property (nonatomic, copy, nullable) NSArray<NSString *> *arguments;
@@ -329,7 +325,6 @@ static NSTimeInterval const kXTCodeSignTimeout = 8.0;
  * 优先 codesign，失败回退 ldid。两个工具都失败时返回最后一个失败结果。
  */
 - (NSDictionary *)signFileAtPath:(NSString *)path entitlementsFile:(nullable NSString *)entitlementsFile {
-    NSFileManager *fm = [NSFileManager defaultManager];
     NSDictionary *lastFailure = nil;
 
     // 路径一：codesign（优先）
@@ -498,7 +493,7 @@ static NSTimeInterval const kXTCodeSignTimeout = 8.0;
     [handle closeFile];
     if (head.length < 4) return NO;
 
-    const unsigned char *bytes = head.bytes;
+    const unsigned char *bytes = (const unsigned char *)head.bytes;
     uint32_t magic = ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
                      ((uint32_t)bytes[2] << 8)  | (uint32_t)bytes[3];
     switch (magic) {

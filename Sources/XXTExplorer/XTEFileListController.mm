@@ -205,10 +205,10 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
     self.isLoading = YES;
     if (!self.refreshControl.isRefreshing) [self.refreshControl beginRefreshing];
 
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] listDirectory:self.currentPath
         completion:^(NSArray<NSDictionary *> *items, NSError *error) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
+            __strong __typeof__(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             strongSelf.isLoading = NO;
             [strongSelf.refreshControl endRefreshing];
@@ -372,7 +372,7 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
         [UIAlertController alertControllerWithTitle:name message:path
                                  preferredStyle:UIAlertControllerStyleActionSheet];
 
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [sheet addAction:[UIAlertAction actionWithTitle:@"重命名" style:UIAlertActionStyleDefault
         handler:^(UIAlertAction *action) { [weakSelf promptRenameItem:item]; }]];
     [sheet addAction:[UIAlertAction actionWithTitle:@"复制" style:UIAlertActionStyleDefault
@@ -448,7 +448,7 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
 - (void)promptRenameItem:(NSDictionary *)item {
     NSString *oldName = XTEItemName(item);
     NSString *path = XTEItemPath(item);
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [self promptTitle:@"重命名" message:@"请输入新名称" initialText:oldName onConfirm:^(NSString *text) {
         NSString *newName = [text stringByTrimmingCharactersInSet:
                              [NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -465,7 +465,7 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
     NSString *name = XTEItemName(item);
     NSString *path = XTEItemPath(item);
     NSString *initial = [self.currentPath stringByAppendingPathComponent:name];
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [self promptTitle:(move ? @"移动到" : @"复制到")
               message:@"输入目标路径（绝对路径，或相对当前目录）"
           initialText:initial
@@ -490,7 +490,7 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
 #pragma mark - 工具栏：新建与上传
 
 - (void)createFolder {
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [self promptTitle:@"新建文件夹" message:@"请输入文件夹名称" initialText:@""
            onConfirm:^(NSString *text) {
         NSString *name = [text stringByTrimmingCharactersInSet:
@@ -504,7 +504,7 @@ static UIImage *XTEIconForItem(NSDictionary *item) {
 }
 
 - (void)createFile {
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [self promptTitle:@"新建文件" message:@"请输入文件名（如 script.lua）" initialText:@"untitled.lua"
            onConfirm:^(NSString *text) {
         NSString *name = [text stringByTrimmingCharactersInSet:
@@ -554,7 +554,7 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
     }
 
     NSString *destination = [self.currentPath stringByAppendingPathComponent:sourceURL.lastPathComponent];
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [[XTEAPIClient sharedClient] writeFile:destination content:content completion:^(NSError *error) {
         if (error) [weakSelf showError:error]; else [weakSelf loadItems];
     }];

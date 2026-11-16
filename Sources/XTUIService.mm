@@ -110,12 +110,12 @@ static UIColor *XTPoseColor(void) {
 
 - (void)xt_hideToast {
     [self xt_cancelToastTimer];
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     [UIView animateWithDuration:0.25 animations:^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
         strongSelf->_toastLabel.alpha = 0.0;
     } completion:^(BOOL finished) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
         strongSelf->_toastWindow.hidden = YES;
     }];
 }
@@ -196,7 +196,7 @@ static UIColor *XTPoseColor(void) {
     XTMainAsync(^{
         UIWindow *window = [self xt_poseWindowCreateIfNeeded];
         window.frame = [UIScreen mainScreen].bounds;
-        __weak typeof(self) weakSelf = self;
+        __weak __typeof__(self) weakSelf = self;
 
         if (down) {
             UIView *dot = [[UIView alloc] initWithFrame:CGRectMake(x - 22.0, y - 22.0, 44.0, 44.0)];
@@ -255,7 +255,7 @@ static UIColor *XTPoseColor(void) {
                 dot.alpha = 0.0;
             } completion:^(BOOL finished) {
                 [dot removeFromSuperview];
-                __strong typeof(weakSelf) strongSelf = weakSelf;
+                __strong __typeof__(weakSelf) strongSelf = weakSelf;
                 if (!strongSelf) return;
                 [strongSelf->_poseLock lock];
                 BOOL empty = (strongSelf->_poseViews.count == 0);
@@ -395,13 +395,13 @@ static UIColor *XTPoseColor(void) {
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:safeTitle
                                                                        message:safeMessage
                                                                 preferredStyle:UIAlertControllerStyleAlert];
-        __weak typeof(self) weakSelf = self;
+        __weak __typeof__(self) weakSelf = self;
         [titles enumerateObjectsUsingBlock:^(NSString *buttonTitle, NSUInteger index, BOOL *stop) {
             NSString *text = [buttonTitle isKindOfClass:[NSString class]] ? buttonTitle : [buttonTitle description];
             UIAlertAction *action = [UIAlertAction actionWithTitle:text
                                                              style:UIAlertActionStyleDefault
                                                            handler:^(UIAlertAction * _Nonnull chosen) {
-                __strong typeof(weakSelf) strongSelf = weakSelf;
+                __strong __typeof__(weakSelf) strongSelf = weakSelf;
                 if (!strongSelf) return;
                 void (^handler)(NSInteger) = strongSelf->_alertCompletion;
                 strongSelf->_alertCompletion = nil;
@@ -601,15 +601,15 @@ static UIColor *XTPoseColor(void) {
     [request setHTTPMethod:@"GET"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-    __weak typeof(self) weakSelf = self;
+    __weak __typeof__(self) weakSelf = self;
     NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
                                              completionHandler:^(NSData * _Nullable data,
                                                                  NSURLResponse * _Nullable response,
                                                                  NSError * _Nullable error) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
         NSDictionary *result = [strongSelf xt_parseUpdateData:data response:response error:error];
         XTMainAsync(^{
-            __strong typeof(weakSelf) innerSelf = weakSelf;
+            __strong __typeof__(weakSelf) innerSelf = weakSelf;
             if (innerSelf) {
                 [innerSelf->_updateLock lock];
                 innerSelf->_updateInfo = result;
