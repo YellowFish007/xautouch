@@ -150,8 +150,14 @@ def scan_debian():
     d = os.path.join(ROOT, "layout", "DEBIAN")
     if not os.path.isdir(d):
         return []
-    return [(f, os.path.getsize(os.path.join(d, f)), bool(os.stat(os.path.join(d, f)).st_mode & 0o111))
-            for f in sorted(os.listdir(d))]
+    rows = []
+    for f in sorted(os.listdir(d)):
+        p = os.path.join(d, f)
+        if not os.path.isfile(p):
+            continue
+        # 不用 st_mode 判断可执行位：Windows 上该位恒为真，文档会和 CI 生成结果不一致
+        rows.append((f, os.path.getsize(p), "元数据" if f == "control" else "维护脚本"))
+    return rows
 
 
 def group_routes(routes):
@@ -254,10 +260,10 @@ def build():
     A("")
     A("## 6. 安装适配")
     A("")
-    A("| 文件 | 字节 | 可执行 |")
+    A("| 文件 | 字节 | 类型 |")
     A("|---|---|---|")
-    for f, size, x in debs:
-        A(f"| `layout/DEBIAN/{f}` | {size} | {'是' if x else '否'} |")
+    for f, size, kind in debs:
+        A(f"| `layout/DEBIAN/{f}` | {size} | {kind} |")
     A("")
     A("支持的越狱环境：rootful / rootless（`/var/jb`）/ roothide / TrollStore，")
     A("分支判断在 `layout/DEBIAN/postinst`；CI 三种 scheme 分别打包。")
@@ -292,6 +298,18 @@ def main():
         if old != text:
             print(f"FAIL: {os.path.relpath(OUT, ROOT)} 与源码不同步，请重跑 "
                   f"python tools/gen_features.py")
+            a, b = old.splitlines(), text.splitlines()
+            shown = 0
+            for i in range(max(len(a), len(b))):
+                la = a[i] if i < len(a) else "<缺行>"
+                lb = b[i] if i < len(b) else "<缺行>"
+                if la != lb:
+                    print(f"  第 {i+1} 行")
+                    print(f"    文件: {la[:160]}")
+                    print(f"    源码: {lb[:160]}")
+                    shown += 1
+                    if shown >= 3:
+                        break
             return 1
         print("PASS: docs/FEATURES.md 与源码同步")
         return 0

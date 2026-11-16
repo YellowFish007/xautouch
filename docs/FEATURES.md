@@ -160,14 +160,14 @@
 
 ## 6. 安装适配
 
-| 文件 | 字节 | 可执行 |
+| 文件 | 字节 | 类型 |
 |---|---|---|
-| `layout/DEBIAN/control` | 478 | 否 |
-| `layout/DEBIAN/postinst` | 4069 | 否 |
-| `layout/DEBIAN/postrm` | 746 | 否 |
-| `layout/DEBIAN/preinst` | 1139 | 否 |
-| `layout/DEBIAN/prerm` | 348 | 否 |
-| `layout/DEBIAN/sign-tools.sh` | 10623 | 否 |
+| `layout/DEBIAN/control` | 478 | 元数据 |
+| `layout/DEBIAN/postinst` | 4069 | 维护脚本 |
+| `layout/DEBIAN/postrm` | 746 | 维护脚本 |
+| `layout/DEBIAN/preinst` | 1139 | 维护脚本 |
+| `layout/DEBIAN/prerm` | 348 | 维护脚本 |
+| `layout/DEBIAN/sign-tools.sh` | 10623 | 维护脚本 |
 
 支持的越狱环境：rootful / rootless（`/var/jb`）/ roothide / TrollStore，
 分支判断在 `layout/DEBIAN/postinst`；CI 三种 scheme 分别打包。
