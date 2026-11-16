@@ -69,6 +69,9 @@ def check(path, scheme=None):
         return ["缺少 control.tar.*"], []
     if not dat_key:
         return ["缺少 data.tar.*"], []
+    # iOS 侧 apt 对 lzma-alone 的支持取决于编译选项，统一压成 xz（dpkg/apt 无条件支持）
+    if dat_key != "data.tar.xz":
+        errs.append(f"data 段应为 data.tar.xz（iOS apt 兼容），当前 {dat_key}")
 
     ct = open_tar(mem[ctl_key])
     files = {norm(m.name): m for m in ct.getmembers()}
@@ -88,6 +91,11 @@ def check(path, scheme=None):
                 errs.append(f"control 缺字段 {k}")
         if meta.get("Package") != "app.xautouch.ios":
             errs.append(f"Package 异常: {meta.get('Package')}")
+        # Replaces 指向包自身会让 apt 解析 deb 时直接失败（Sileo 报
+        # "Unsupported file ... given on commandline"），必须挡在门禁上
+        repl_names = [x.strip().split()[0] for x in meta.get("Replaces", "").split(",") if x.strip()]
+        if meta.get("Package") in repl_names:
+            errs.append("control 的 Replaces 指向包自身")
 
     for s in MAINTAINER_SCRIPTS:
         m = files.get(s)

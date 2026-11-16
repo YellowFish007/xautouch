@@ -92,6 +92,14 @@ jobs:
           echo "===== dist ====="
           ls -lh dist
 
+      - name: 规范化 deb 压缩为 xz
+        run: |
+          set -eo pipefail
+          # Theos 默认 lzma（lzma-alone），iOS 侧 apt 对它的支持取决于编译选项，
+          # 实测在 Dopamine 上装本地 deb 会报 "Unsupported file ... given on commandline"。
+          # 只换压缩算法，tar 原始字节不动。
+          python3 tools/repackage_deb.py dist/*.deb
+
       - name: 校验 deb 产物结构
         run: |
           set -eo pipefail

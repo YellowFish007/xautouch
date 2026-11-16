@@ -35,6 +35,14 @@ for key in ("Package", "Name", "Depends", "Version", "Architecture", "Descriptio
     check(f"control 含 {key}", re.search(rf"^{key}:", ctrl, re.M) is not None)
 check("架构为 iphoneos-arm64", "iphoneos-arm64" in ctrl)
 check("依赖 MobileSubstrate", "mobilesubstrate" in ctrl)
+# Replaces 指向包自身会让 apt 解析 deb 时失败（Sileo 报 "Unsupported file"）
+_repl = re.search(r"^Replaces:(.*)$", ctrl, re.M)
+check("control 的 Replaces 不含包自身",
+      _repl is None or "app.xautouch.ios" not in _repl.group(1))
+check("提供 deb 重压脚本 tools/repackage_deb.py",
+      os.path.isfile(os.path.join(ROOT, "tools", "repackage_deb.py")))
+check("CI 在打包后把 data 段重压为 xz",
+      "repackage_deb.py" in read(".github/workflows/build.yml"))
 
 print("== 2. deb 布局与维护脚本 ==")
 deb = os.path.join(ROOT, "layout", "DEBIAN")
