@@ -10,6 +10,7 @@ verify.py - XAutouch 全量设计自检（Windows/任意平台可跑）
 
 运行： python tests/verify.py
 """
+import glob
 import os, sys, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -84,6 +85,12 @@ check("注入前先写崩溃标记", tweak.index("XAMarkBooting()") < tweak.inde
 check("标记存在时直接返回不注入",
       "XAFileExists(XA_CRASH_FLAG)" in tweak and "return;" in tweak)
 check("初始化成功才清除标记", "unlink(XA_CRASH_FLAG)" in tweak)
+# 面板端口：文档与商业版都是 8080，1.0.0-3 的代码写成 46899，装完照文档打不开。
+srcs = [p for p in glob.glob(os.path.join(ROOT, "Sources", "**", "*.*"), recursive=True)
+        if p.endswith((".mm", ".h", ".xm", ".m"))]
+check("源码内不残留旧端口 46899",
+      not any("46899" in open(p, encoding="utf-8", errors="ignore").read() for p in srcs))
+check("HTTP 服务默认端口为 8080", "startOnPort:8080" in read("Sources/XTApplication.mm"))
 # layout/ 三种 scheme 共用，plist 里的绝对路径只在 rootful 成立；
 # rootless 必须在打包前改写成 /var/jb 前缀，否则守护进程起不来。
 check("提供按 scheme 改写 launchd 路径的钩子",

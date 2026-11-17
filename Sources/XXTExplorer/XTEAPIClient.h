@@ -1,7 +1,7 @@
 /**
  * XTEAPIClient.h - 本地 HTTP API 封装
  *
- * 封装宿主 tweak 在 127.0.0.1:46899 提供的文件/脚本端点。
+ * 封装宿主 tweak 在 127.0.0.1:8080 提供的文件/脚本端点。
  * 所有方法都在主线程回调；JSON 中 code != 0 统一转换成 NSError。
  */
 #import <Foundation/Foundation.h>

@@ -235,7 +235,7 @@
         _sseQueue = dispatch_queue_create("com.xautouch.http.sse", DISPATCH_QUEUE_SERIAL);
         _sseClients = [NSMutableArray array];
         _listenFd = -1;
-        _port = 46899;
+        _port = 8080;
         _corsEnabled = YES;
     }
     return self;

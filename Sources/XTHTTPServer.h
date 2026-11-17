@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL corsEnabled;
 
 + (instancetype)sharedInstance;
-- (void)startOnPort:(UInt16)port;   // 默认 46899
+- (void)startOnPort:(UInt16)port;   // 默认 8080（对齐商业版面板端口）
 - (void)stop;
 /// 路由分发（实现于 XTRoutes.mm）
 - (nullable XTHTTPResponse *)dispatchRequest:(XTHTTPRequest *)req;

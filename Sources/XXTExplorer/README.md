@@ -8,7 +8,7 @@
 - 最低系统：iOS 12.0，arm64
 - 界面全部由代码构建，无 storyboard / xib
 - ARC，公开 UIKit / Foundation API，不调用私有 API
-- **App 不直接读写越狱根文件系统**，所有文件操作通过 `http://127.0.0.1:46899` 的本地 HTTP API 完成
+- **App 不直接读写越狱根文件系统**，所有文件操作通过 `http://127.0.0.1:8080` 的本地 HTTP API 完成
 
 ## 源码职责
 
@@ -23,7 +23,7 @@
 
 ## 与 tweak 的 HTTP 通信关系
 
-宿主 tweak 的 `XTHTTPServer` 监听 `127.0.0.1:46899`（端口在 `XTRoutes.mm` / `XTApplication.mm` 中写死）。App 启动后：
+宿主 tweak 的 `XTHTTPServer` 监听 `127.0.0.1:8080`（端口在 `XTRoutes.mm` / `XTApplication.mm` 中写死）。App 启动后：
 
 1. `GET /deviceinfo` → 读取 `resource_root`（rootful 通常为 `/usr/lib/xautouch`，rootless 为 `/var/jb/usr/lib/xautouch`），作为用户资源根目录。失败时回退到 `/var/jb/usr/lib/xautouch`。
 2. `GET /file_list?path=<dir>` → 列出目录，响应 `{code:0, data:[...]}`。

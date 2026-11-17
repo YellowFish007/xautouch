@@ -173,7 +173,7 @@ SSE 事件 `cloud_status` 会复用现有 `/api/log/stream` 广播通道，无�
 
 - UDP 与云控都必须带 token；UDP 不匹配直接丢弃并回 `unauthorized`，不计入正常指令。
 - token 与配置文件写盘后权限设为 `0600`。
-- 默认 HTTP 服务监听 `0.0.0.0:46899`，只有 token 保护 UDP/WebSocket；生产部署请配合防火墙或只绑内网，Web 面板暴露 token 的路由不要对公网开放。
+- 默认 HTTP 服务监听 `0.0.0.0:8080`，只有 token 保护 UDP/WebSocket；生产部署请配合防火墙或只绑内网，Web 面板暴露 token 的路由不要对公网开放。
 - 截图/屏幕分片通过 base64 放在 JSON 里，单包 < 1200 字节；接收端需校验 `total` 与所有 `seq` 到齐后再拼接，避免乱序/重放。
 
 ---

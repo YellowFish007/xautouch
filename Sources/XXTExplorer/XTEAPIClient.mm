@@ -11,7 +11,7 @@
 
 NSString *const XTEAPIErrorDomain = @"XTEAPIErrorDomain";
 
-static NSString *const kXTEBaseURL = @"http://127.0.0.1:46899";
+static NSString *const kXTEBaseURL = @"http://127.0.0.1:8080";
 static NSString *const kXTEFallbackRoot = @"/var/jb/usr/lib/xautouch";
 
 static NSError *XTEMakeError(NSInteger code, NSString *message) {

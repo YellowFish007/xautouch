@@ -87,7 +87,7 @@ static NSString *_resourceRoot = @"/var/jb/usr/lib/xautouch";
 
 - (void)start {
     XTLog(@"[XAutouch] 启动 - env=%@ root=%@", [self environment], _resourceRoot);
-    [[XTHTTPServer sharedInstance] startOnPort:46899];
+    [[XTHTTPServer sharedInstance] startOnPort:8080];
     (void)[XTScriptEngine sharedInstance]; // 触发 Lua VM 初始化
 }
 
@@ -112,7 +112,7 @@ static NSString *_resourceRoot = @"/var/jb/usr/lib/xautouch";
              @"sysversion":d.systemVersion ?: @"",
              @"zeversion":@"1.0.0",
              @"devtype":d.model ?: @"iPhone",
-             @"webserver_url":@"http://127.0.0.1:46899",
+             @"webserver_url":@"http://127.0.0.1:8080",
              @"pkgtype":[self environment],
              @"bundle_id":[[NSBundle mainBundle] bundleIdentifier] ?: @"unknown",
              @"root":[self jbRoot],
@@ -125,7 +125,7 @@ static NSString *_resourceRoot = @"/var/jb/usr/lib/xautouch";
              @"version":@"1.0.0",
              @"environment":[self environment],
              @"features":@[@"touch", @"script", @"web", @"ocr", @"template", @"record", @"webrtc"],
-             @"port":@46899};
+             @"port":@8080};
 }
 
 #pragma mark - 授权 / 用户配置

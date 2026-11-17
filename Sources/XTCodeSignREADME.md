@@ -144,13 +144,13 @@ if ([path isEqualToString:@"/api/system/sign-status"]) {
 调用示例：
 
 ```sh
-curl -s -X POST http://127.0.0.1:46899/api/system/sign \
+curl -s -X POST http://127.0.0.1:8080/api/system/sign \
      -d 'path=/usr/lib/TweakInject/XAutouch.dylib'
-curl -s -X POST http://127.0.0.1:46899/api/system/verify \
+curl -s -X POST http://127.0.0.1:8080/api/system/verify \
      -d 'path=/usr/lib/TweakInject/XAutouch.dylib'
-curl -s -X POST http://127.0.0.1:46899/api/system/resign \
+curl -s -X POST http://127.0.0.1:8080/api/system/resign \
      -d 'path=/Applications/Demo.app'
-curl -s http://127.0.0.1:46899/api/system/sign-status
+curl -s http://127.0.0.1:8080/api/system/sign-status
 ```
 
 所有响应统一 `{code, message, ...}`：`code == 0` 成功；非 0 时 `message` /
