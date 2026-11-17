@@ -58,6 +58,13 @@ post = read("layout/DEBIAN/postinst")
 for env in ("rootful", "rootless", "roothide", "trollstore"):
     check(f"postinst 适配 {env}", env in post)
 check("watchdog 守护脚本存在", os.path.isfile(os.path.join(prefix, "bin", "xautouchd")))
+# Theos 打包会拒绝 CRLF 的 control（deb.mk: "control file contains Windows line endings"）。
+# Windows 上任何一次文本模式写入都会把 \n 变 \r\n，所以必须用二进制方式校验。
+for rel in ("control", "layout/DEBIAN/control", "layout/DEBIAN/preinst",
+            "layout/DEBIAN/postinst", "layout/DEBIAN/prerm", "layout/DEBIAN/postrm"):
+    p = os.path.join(ROOT, rel)
+    raw = open(p, "rb").read() if os.path.isfile(p) else b""
+    check(f"{rel} 使用 LF 换行", bool(raw) and b"\r\n" not in raw)
 plist = read("layout/Library/LaunchDaemons/app.xautouch.agent.plist")
 check("LaunchDaemon 指向 xautouchd", "xautouchd" in plist)
 # layout/ 三种 scheme 共用，plist 里的绝对路径只在 rootful 成立；
