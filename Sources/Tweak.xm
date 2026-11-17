@@ -4,14 +4,23 @@
  * 注入目标：SpringBoard（系统桌面进程）。
  * SpringBoard 拥有处理用户触摸事件的权限，触摸合成在此进程内完成。
  *
- * 稳定性设计（1.0.0-2）：
- * 1. 初始化推迟到 didFinish 之后 1.5s，避开 SpringBoard 启动关键路径；
- * 2. 每一步用 @try/@catch 包住，异常写日志而不是让进程崩；
- * 3. 启动前写 flag、走完才删；若上次停在半路，本次不注入，避免无限 Safe Mode；
- * 4. 不再 hook -dealloc（在 dealloc 里创建单例风险高、收益低）。
+ * 稳定性设计（1.0.0-3）：
+ *
+ *   1. 硬熔断（最重要）：
+ *      加载时先在 /var/mobile/Library/Logs/xa-inject-crashed 写标记，
+ *      全部初始化**成功走完**才删掉它。所以只要有任何一步崩了，
+ *      标记就留在磁盘上；下一次 SpringBoard 启动看到标记直接返回，
+ *      **连 hook 都不装**，桌面一定正常。
+ *      这一条覆盖了 1.0.0-2 的漏洞：旧版标记在 didFinish 里才写，
+ *      如果崩在 %ctor / dylib 构造阶段，熔断代码根本没机会执行，
+ *      于是"Exit Safe Mode -> 重新注入 -> 再崩"无限循环。
+ *
+ *   2. 初始化推迟 1.5s，避开 SpringBoard 启动关键路径。
+ *
+ *   3. 每一步 @try/@catch，异常写日志而不是让进程崩。
  *
  * 诊断日志：/var/mobile/Library/Logs/xautouch-boot.log
- * 强制重试：删掉上面这个日志文件后 respring 即可。
+ * 解除熔断：删掉 xa-inject-crashed 后 respring 即可重试。
  */
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -24,8 +33,8 @@
 #import <unistd.h>
 #import <sys/stat.h>
 
-#define XA_LOG_PATH  "/var/mobile/Library/Logs/xautouch-boot.log"
-#define XA_FLAG_PATH "/var/mobile/Library/Logs/xa-booting"
+#define XA_LOG_PATH   "/var/mobile/Library/Logs/xautouch-boot.log"
+#define XA_CRASH_FLAG "/var/mobile/Library/Logs/xa-inject-crashed"
 
 // 直接写文件，不依赖 ObjC 单例与日志类，ctor 最早期也能用
 static void XADiag(const char *fmt, ...) {
@@ -46,10 +55,12 @@ static BOOL XAFileExists(const char *path) {
     return stat(path, &st) == 0;
 }
 
-// flag 还在 = 上次启动没走完，中途崩了。清掉让下一次启动能重试。
-static BOOL XAPreviousBootCrashed(void) {
-    if (!XAFileExists(XA_FLAG_PATH)) return NO;
-    unlink(XA_FLAG_PATH);
+// 返回 YES 表示写成功；写不进去也不阻断注入，只是熔断能力降级
+static BOOL XAMarkBooting(void) {
+    FILE *f = fopen(XA_CRASH_FLAG, "w");
+    if (!f) return NO;
+    fputs("booting\n", f);
+    fclose(f);
     return YES;
 }
 
@@ -61,11 +72,10 @@ static BOOL XAPreviousBootCrashed(void) {
     %orig;
 
     XADiag("didFinish: enter");
-    FILE *flag = fopen(XA_FLAG_PATH, "w");
-    if (flag) fclose(flag);
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
+        BOOL allOK = YES;
         XADiag("boot: begin");
 
         @try {
@@ -80,6 +90,7 @@ static BOOL XAPreviousBootCrashed(void) {
             [[XTApplication sharedInstance] start];
             XADiag("boot: XTApplication ok");
         } @catch (NSException *e) {
+            allOK = NO;
             XADiag("boot: start EXC %s | %s",
                    e.name.UTF8String ?: "?", e.reason.UTF8String ?: "?");
         }
@@ -98,8 +109,12 @@ static BOOL XAPreviousBootCrashed(void) {
             XADiag("boot: cloud EXC %s", e.reason.UTF8String ?: "?");
         }
 
-        unlink(XA_FLAG_PATH);
-        XADiag("boot: done");
+        if (allOK) {
+            unlink(XA_CRASH_FLAG);
+            XADiag("boot: done（熔断标记已清除）");
+        } else {
+            XADiag("boot: FAILED，保留熔断标记，下次启动不再注入");
+        }
     });
 }
 
@@ -132,12 +147,15 @@ static BOOL XAPreviousBootCrashed(void) {
         XADiag("=== ctor enter (bundle=%s) ===",
                NSBundle.mainBundle.bundleIdentifier.UTF8String ?: "?");
 
-        if (XAPreviousBootCrashed()) {
-            XADiag("!!! 上次启动中途崩溃，本次跳过注入，SpringBoard 保持正常");
-            XADiag("!!! 删掉 %s 后 respring 可重试", XA_LOG_PATH);
+        // 熔断：上次没走完就返回，连 %init 都不执行。
+        // 这样无论崩在加载期、hook 期还是延迟初始化期，桌面都不会再被拖进 Safe Mode。
+        if (XAFileExists(XA_CRASH_FLAG)) {
+            XADiag("!!! 熔断生效：%s 存在，本次不注入", XA_CRASH_FLAG);
+            XADiag("!!! 排查完想重试：删掉该文件后 respring");
             return;
         }
 
+        XAMarkBooting();
         %init(XAMain);
         XADiag("=== ctor exit (hooked) ===");
     } @catch (NSException *e) {

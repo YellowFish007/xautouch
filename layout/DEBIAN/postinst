@@ -137,7 +137,11 @@ if command -v uicache >/dev/null 2>&1; then
         uicache -r >/dev/null 2>&1
     fi
 fi
-killall -9 SpringBoard >/dev/null 2>&1
+# 注意：不要在 dpkg 事务内 kill 桌面。postinst 期间 dpkg 仍持有锁，
+# 此时杀掉 SpringBoard 会连带杀掉正在跑事务的前端（Sileo），
+# 事务中断后包会停在 reinstreq 状态，apt 从此全局报错。
+# 组件生效请由用户在 Sileo 里点"重启 SpringBoard"，或手动 respring。
+echo "XAutouch: 安装完成，请在 Sileo 里点\"重启 SpringBoard\"使其生效"
 
 echo "XAutouch: installed ($MODE)"
 exit 0

@@ -5,8 +5,10 @@ set +e
 echo "XAutouch: preinst - stopping previous instance"
 launchctl unload /Library/LaunchDaemons/app.xautouch.agent.plist >/dev/null 2>&1
 launchctl unload /var/jb/Library/LaunchDaemons/app.xautouch.agent.plist >/dev/null 2>&1
+# 只停旧守护进程；不要 kill 桌面 —— preinst 也在 dpkg 事务内，
+# 杀桌面会连带杀掉事务前端，把包留在 reinstreq 状态。
 killall -9 XAutouchAgent >/dev/null 2>&1
-killall -9 SpringBoard >/dev/null 2>&1
+killall -9 xautouchd >/dev/null 2>&1
 
 # 备份用户脚本与配置，避免升级覆盖
 for PREFIX in /var/jb/usr/lib/xautouch /usr/lib/xautouch /rootfs/usr/lib/xautouch; do

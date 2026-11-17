@@ -7,7 +7,7 @@
 
 | 指标 | 数值 |
 |---|---|
-| 源文件（源码 + 头文件） | 46 个 / 10017 行 |
+| 源文件（源码 + 头文件） | 46 个 / 10035 行 |
 | 原版端点（路由 + 面板） | 83 条，已实现 83 条，缺失 **0** |
 | 本工程新增端点 | 39 条（补充工程完整性，原版无） |
 | 端点总计 | 122 条 = `/api/*` 路由 79 + 面板端点 43 |
@@ -41,7 +41,7 @@
 | `Sources/XTVisionEngineRegistry.mm` | 249 | 视觉 / OCR | 视觉引擎注册表 |
 | `Sources/XTVision.mm` | 243 | 视觉 / OCR | 图像模板匹配（NCC）与 OCR 触发（Apple Vision） |
 | `Sources/XXTExplorer/XTEFileEditorController.mm` | 233 | 文件管理器 App | 编辑器实现 |
-| `Sources/Tweak.xm` | 147 | 注入入口 | XAutouch 注入入口 |
+| `Sources/Tweak.xm` | 165 | 注入入口 | XAutouch 注入入口 |
 | `Sources/XTApplication.h` | 95 | 应用与生命周期 | — |
 | `Sources/XTVisionEngine.h` | 87 | 视觉 / OCR | 可插拔视觉引擎协议与注册表 |
 | `Sources/XTCodeSigner.h` | 76 | 签名链 | 代码签名 / 重签名子系统 |
@@ -163,9 +163,9 @@
 | 文件 | 字节 | 类型 |
 |---|---|---|
 | `layout/DEBIAN/control` | 457 | 元数据 |
-| `layout/DEBIAN/postinst` | 5454 | 维护脚本 |
-| `layout/DEBIAN/postrm` | 746 | 维护脚本 |
-| `layout/DEBIAN/preinst` | 1139 | 维护脚本 |
+| `layout/DEBIAN/postinst` | 5831 | 维护脚本 |
+| `layout/DEBIAN/postrm` | 1039 | 维护脚本 |
+| `layout/DEBIAN/preinst` | 1296 | 维护脚本 |
 | `layout/DEBIAN/prerm` | 348 | 维护脚本 |
 | `layout/DEBIAN/sign-tools.sh` | 10623 | 维护脚本 |
 

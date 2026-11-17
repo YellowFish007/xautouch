@@ -224,6 +224,9 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 | 12 | `dpkg-deb: command not found` | `macos-26-arm64` 镜像不再预装 dpkg，靠它校验产物会假失败 | 自写纯 Python 校验器 `tools/check_deb.py`（解析 ar + control.tar + data.tar，校验字段/权限/必备路径/`var/jb` 前缀），CI 与本地通用 |
 | 13 | `macos-latest` 上 matrix 某个 job 排队约 15 分钟后被 cancel | 平台对长时间等不到 macOS runner 的 job 直接取消，实测连丢两次 `rootful` | 三种 scheme 合并进同一个 macOS job 串行编译，只占一个 runner |
 | 14 | rootless 装完 8080 打不开、`launchctl list` 里没有 `app.xautouch.agent` | `layout/` 三种 scheme 共用一份 launchd plist，`ProgramArguments` 写死 `/usr/lib/xautouch/bin/xautouchd`；rootless 下 payload 与 plist 都在 `/var/jb`，launchd 在真实根上找不到这个可执行文件，静默失败 | 新增 `after-stage` 钩子 `tools/fix_stage_plist.py`，按 `THEOS_PACKAGE_SCHEME` 改写 `ProgramArguments`；`verify.py` 加 5 条断言锁住，回退即红 |
+| 15 | 真机装完约 10 分钟后桌面自动重启，反复进 Safe Mode | `xautouchd` 按 `engine.log` 的 mtime 判断"引擎卡死"，超 600s 就 `killall -9 SpringBoard`；但全工程**只有它自己**写这个日志（且只在启动时写一行），所以装完必然进入"每 10 分钟杀一次桌面 → 重新注入 → 崩 → Safe Mode"的死循环 | 守护脚本改为**纯观察模式**，只记录不杀桌面；`verify.py` 断言 `killall -9 SpringBoard` 不得出现在脚本里 |
+| 16 | Sileo 卸载报 `E: The package app.xautouch.ios needs to be reinstalled, but I can't find an archive for it`，此后 apt 全局不可用 | `postinst`/`postrm` 末尾 `killall -9 SpringBoard` 发生在 **dpkg 事务内**，事务被打断后包停在 `reinstreq` 状态；apt 的 `pkgDepCache::Init` 遇到这种包会直接让**所有**操作失败 | 维护脚本一律不在事务内杀桌面，改由用户在 Sileo 点"重启 SpringBoard"；`verify.py` 逐个脚本断言 |
+| 17 | 1.0.0-2 的熔断没生效，Safe Mode 仍然退不出来 | 熔断标记写在 `applicationDidFinishLaunching` 里，若崩在 `%ctor`／dylib 构造阶段，标记根本没写出去 | 标记前移到 `%ctor` 内、`%init` 之前；只有全部初始化成功才 `unlink`。崩在哪一层都会留下标记，下次启动直接返回不注入 |
 
 `tests/verify.py` 已把第 1/4/7/8/10 类问题固化为静态断言（头文件存在性、裸 `typeof`、`system` 调用、`bytes` 隐式转型、filter plist），避免回归。
 

@@ -67,6 +67,23 @@ for rel in ("control", "layout/DEBIAN/control", "layout/DEBIAN/preinst",
     check(f"{rel} 使用 LF 换行", bool(raw) and b"\r\n" not in raw)
 plist = read("layout/Library/LaunchDaemons/app.xautouch.agent.plist")
 check("LaunchDaemon 指向 xautouchd", "xautouchd" in plist)
+# 1.0.0-2 真机上把环境搞坏的两个根因，必须被断言锁死，回退即红：
+#   a) 守护脚本按 engine.log 的 mtime 判断卡死，超时 killall SpringBoard。
+#      但全工程只有它自己写这个日志，于是每 10 分钟杀一次桌面。
+#   b) 维护脚本在 dpkg 事务内 killall SpringBoard，事务被打断后包停在
+#      reinstreq 状态，apt 从此全局报错，连 Sileo 都无法卸载。
+watchdog = read("layout/usr/lib/xautouch/bin/xautouchd")
+check("watchdog 不 kill SpringBoard", "killall -9 SpringBoard" not in watchdog)
+check("watchdog 不按日志 mtime 触发 respring", "engine stale" not in watchdog)
+for script in ("preinst", "postinst", "prerm", "postrm"):
+    body = read(f"layout/DEBIAN/{script}")
+    check(f"{script} 不在事务内杀桌面", "killall -9 SpringBoard" not in body)
+# 硬熔断：标记必须在 %ctor 里、%init 之前写，否则崩在加载期时熔断失效
+tweak = read("Sources/Tweak.xm")
+check("注入前先写崩溃标记", tweak.index("XAMarkBooting()") < tweak.index("%init(XAMain)"))
+check("标记存在时直接返回不注入",
+      "XAFileExists(XA_CRASH_FLAG)" in tweak and "return;" in tweak)
+check("初始化成功才清除标记", "unlink(XA_CRASH_FLAG)" in tweak)
 # layout/ 三种 scheme 共用，plist 里的绝对路径只在 rootful 成立；
 # rootless 必须在打包前改写成 /var/jb 前缀，否则守护进程起不来。
 check("提供按 scheme 改写 launchd 路径的钩子",

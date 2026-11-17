@@ -10,6 +10,9 @@ done
 for P in /var/jb/Library/LaunchDaemons/app.xautouch.agent.plist /Library/LaunchDaemons/app.xautouch.agent.plist /rootfs/Library/LaunchDaemons/app.xautouch.agent.plist; do
     rm -f "$P"
 done
-killall -9 SpringBoard >/dev/null 2>&1
-echo "XAutouch: removed"
+# 清掉注入熔断标记与启动日志：否则重装后 tweak 会一直认为"上次崩过"而不注入
+rm -f /var/mobile/Library/Logs/xa-inject-crashed /var/mobile/Library/Logs/xautouch-boot.log
+
+# 同上：卸载事务内不杀桌面，避免把 apt 事务打断成 reinstreq 状态。
+echo "XAutouch: removed（请手动 respring 使卸载生效）"
 exit 0
