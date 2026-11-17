@@ -3,7 +3,7 @@ Name: XAutouch
 Depends: firmware (>= 12.0), mobilesubstrate (>= 0.9.5000)
 Replaces: app.xxtouch.ios
 Conflicts: app.xxtouch.ios
-Version: 1.0.0
+Version: 1.0.0-2
 Architecture: iphoneos-arm64
 Description: iOS 触摸自动化与脚本控制平台（毕业设计实现）。提供 SpringBoard 级触摸合成、本地 HTTP 控制接口、Web 管理面板、Lua 脚本引擎与图像/OCR 触发。
 Section: Development
