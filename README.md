@@ -191,10 +191,11 @@ ssh root@iphone "dpkg -i /var/tmp/app.xautouch.ios_1.0.0_iphoneos-arm64.deb && k
 
 | scheme | 直链 | 大小 | payload 文件数 |
 |---|---|---|---|
-| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MB | 280 |
-| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MB | 280 |
-| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MB | 280 |
+| rootful | [`xautouch-1.0.0-rootful-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootful-arm64.deb) | 4.56 MiB / 4.79 MB | 280 |
+| rootless | [`xautouch-1.0.0-rootless-arm64.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-rootless-arm64.deb) | 4.56 MiB / 4.79 MB | 280 |
+| roothide | [`xautouch-1.0.0-roothide-arm64e.deb`](https://github.com/YellowFish007/xautouch/releases/download/v1.0.0/xautouch-1.0.0-roothide-arm64e.deb) | 4.56 MiB / 4.79 MB | 280 |
 
+> 大小同时写 MiB 与 MB 两个口径：4.56 MiB = 4.79 MB。iOS「文件」App 按十进制显示 **4.8 MB**，Windows 按二进制显示 **4.56 MB**，是同一个文件。要核对请比对字节数：rootless `4785938` / roothide `4785708` / rootful `4784934`。
 > 工程未启用 `-frandom-seed` 等可复现构建选项，同一份源码重新编译出的字节每次都不同（Mach-O UUID + ar/tar 时间戳），所以这里不写死哈希——校验请下载后跑 `python3 tools/check_deb.py <deb>`，它比哈希更能说明问题。
 
 实测核对结论（`tools/check_deb.py` 解析 ar + tar 逐条清点）：
